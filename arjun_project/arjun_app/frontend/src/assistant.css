@@ -1,0 +1,304 @@
+/* Floating assistant: same black / white / pink / cyan system as the landing page. */
+
+.as-launcher {
+  position: fixed;
+  right: clamp(12px, 2.4vw, 28px);
+  bottom: clamp(12px, 2.4vw, 28px);
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 0 24px 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font-family: 'Anton', Impact, sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+.as-launcher:hover {
+  background: #19f3ff;
+}
+.as-launcher:active {
+  transform: scale(0.96);
+}
+.as-launcher.is-open {
+  background: #ff3254;
+}
+
+.as-panel {
+  position: fixed;
+  right: clamp(12px, 2.4vw, 28px);
+  bottom: calc(clamp(12px, 2.4vw, 28px) + 68px);
+  z-index: 89;
+  width: min(420px, calc(100vw - 24px));
+  height: min(620px, calc(100vh - 140px));
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  color: #fff;
+  border: 1.5px solid #fff;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 16px;
+}
+
+.as-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+}
+.as-head h2 {
+  margin: 0;
+  font-family: 'Anton', Impact, sans-serif;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+}
+.as-head p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #a2a2a2;
+}
+.as-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -6px -6px 0 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.as-icon:hover {
+  color: #19f3ff;
+}
+
+.as-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overscroll-behavior: contain;
+}
+.as-empty p {
+  margin: 0 0 16px;
+  color: #cfcfcf;
+  line-height: 1.4;
+}
+.as-suggest {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+.as-suggest button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: 600 15px 'Hanken Grotesk', sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+.as-suggest button:hover {
+  border-color: #19f3ff;
+  color: #19f3ff;
+}
+
+.as-msg {
+  max-width: 88%;
+  padding: 12px 16px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.as-msg--user {
+  align-self: flex-end;
+  background: #fff;
+  color: #000;
+  border-radius: 18px 18px 4px 18px;
+}
+.as-msg--model {
+  align-self: flex-start;
+  background: #1a1a1a;
+  color: #fff;
+  border-radius: 18px 18px 18px 4px;
+}
+.as-preset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  margin: 6px 6px 2px 0;
+  padding: 0 16px 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #ff3254;
+  color: #000;
+  font: 700 15px 'Hanken Grotesk', sans-serif;
+  cursor: pointer;
+  white-space: normal;
+  transition: background 150ms ease;
+}
+.as-preset:hover {
+  background: #19f3ff;
+}
+
+.as-typing {
+  display: flex;
+  gap: 6px;
+  padding: 16px;
+}
+.as-typing i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a2a2a2;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .as-typing i {
+    animation: as-bounce 1s ease-in-out infinite;
+  }
+  .as-typing i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .as-typing i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  @keyframes as-bounce {
+    0%, 60%, 100% {
+      transform: translateY(0);
+      opacity: 0.5;
+    }
+    30% {
+      transform: translateY(-6px);
+      opacity: 1;
+    }
+  }
+}
+
+/* Error card: the HTTP status is the headline, like the status pages. */
+.as-error {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 16px;
+  background: #ff3254;
+  color: #000;
+}
+.as-error-code {
+  font-family: 'Anton', Impact, sans-serif;
+  font-size: 52px;
+  line-height: 0.9;
+}
+.as-error-text {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.as-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 10px;
+  align-items: center;
+}
+.as-error-actions button,
+.as-error-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #000;
+  font: 700 15px 'Hanken Grotesk', sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.as-error-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.as-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+}
+.as-form textarea {
+  flex: 1;
+  resize: none;
+  max-height: 120px;
+  min-height: 48px;
+  padding: 13px 16px;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  border-radius: 24px;
+  background: transparent;
+  color: #fff;
+  font: 500 16px 'Hanken Grotesk', sans-serif;
+  outline: none;
+  field-sizing: content;
+}
+.as-form textarea::placeholder {
+  color: #a2a2a2;
+}
+.as-form textarea:focus {
+  border-color: #19f3ff;
+}
+.as-send {
+  display: inline-grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #000;
+  cursor: pointer;
+  transition: background 150ms ease, transform 150ms ease;
+}
+.as-send:hover:not(:disabled) {
+  background: #19f3ff;
+}
+.as-send:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.as-send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+@media (max-width: 520px) {
+  .as-panel {
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: min(86vh, 100vh - 24px);
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .as-launcher.is-open {
+    display: none;
+  }
+}

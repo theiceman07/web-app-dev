@@ -1,0 +1,21 @@
+# Python / Django
+env_site/
+__pycache__/
+*.pyc
+db.sqlite3
+
+# Secrets: never commit. Copy arjun_project/.env.example to .env and fill it in.
+.env
+!.env.example
+
+# Frontend
+node_modules/
+arjun_project/arjun_app/frontend/dist/
+
+# Tool caches
+.impeccable/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
