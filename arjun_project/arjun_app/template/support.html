@@ -22,6 +22,16 @@
   .lookup-result.bad { background: var(--pink); color: #000; }
   .lookup-result b { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 28px; margin-right: 10px; }
   .hint { color: var(--grey); font-size: 15px; margin-top: 10px; }
+  /* The ticket-check panel is a flat colour block, like the weather card on the home page. */
+  .panel--cyan { background: var(--cyan); color: #000; padding: clamp(20px, 3vw, 36px); }
+  .panel--cyan h2, .panel--cyan .field > span, .panel--cyan .hint { color: #000; }
+  .panel--cyan .field input, .panel--cyan .field textarea { border-color: #000; color: #000; background: rgba(255, 255, 255, 0.55); }
+  .panel--cyan .field input::placeholder { color: #333; }
+  .panel--cyan .btn { background: #000; color: #fff; }
+  .panel--cyan .btn:hover { background: #fff; color: #000; }
+  .panel--cyan .link { color: #000; }
+  .panel--cyan .lookup-result.ok { background: #000; color: #fff; }
+  #manage h3 { font-family: var(--display); font-weight: 400; font-size: 2rem; margin: 28px 0 14px; line-height: 1; }
   @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
@@ -29,7 +39,7 @@
 {% block content %}
 <div class="wrap">
   <p class="kicker">We reply by email</p>
-  <h1 class="title">Support</h1>
+  <h1 class="title" data-split>Support</h1>
   <p class="lede">Send us a ticket and we will follow up. The assistant can also open one for you when it can't answer a question.</p>
 
   {% if created %}
@@ -42,7 +52,7 @@
 
   <div class="cols">
     <section class="panel" aria-labelledby="new-ticket">
-      <h2 id="new-ticket">New ticket</h2>
+      <h2 id="new-ticket" data-split>New ticket</h2>
       <form method="post" action="/support/" novalidate>
         {% csrf_token %}
         <div class="hp" aria-hidden="true"><label>Leave this empty<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
@@ -62,8 +72,8 @@
       </form>
     </section>
 
-    <section class="panel" aria-labelledby="check-ticket">
-      <h2 id="check-ticket">Check a ticket</h2>
+    <section class="panel panel--cyan" aria-labelledby="check-ticket">
+      <h2 id="check-ticket" data-split>Check a ticket</h2>
       <form id="lookup" novalidate>
         <label class="field"><span>Ticket reference</span><input id="l-ref" placeholder="FC-ABC123" autocomplete="off" required /></label>
         <label class="field"><span>Email used for the ticket</span><input id="l-email" type="email" autocomplete="email" /></label>
@@ -149,10 +159,6 @@
         }
       })
       .catch(function () { out.className = 'lookup-result bad'; out.textContent = 'Could not reach the server. Try again.'; });
-  });
-  document.addEventListener('click', function (ev) {
-    var b = ev.target.closest('[data-ask]');
-    if (b) window.dispatchEvent(new CustomEvent('foley:assistant-open', { detail: b.getAttribute('data-ask') || undefined }));
   });
 </script>
 {% endblock %}

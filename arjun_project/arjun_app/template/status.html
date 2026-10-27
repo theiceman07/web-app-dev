@@ -14,7 +14,7 @@
   .help { margin-top: 20px; font-size: 16px; color: var(--grey); max-width: 30em; }
   .help strong { color: #fff; }
   .meta { margin-top: 24px; font-size: 15px; color: var(--grey); }
-  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 32px; }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: clamp(28px, 4vw, 48px); }
   .tile { display: flex; flex-direction: column; justify-content: space-between; min-height: 230px; padding: 20px; background: var(--tone); color: #000; text-decoration: none; transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1), background 260ms ease, color 260ms ease; }
   .tile:hover, .tile:focus-visible { transform: translateY(-8px); background: #000; color: #fff; outline: 2px solid var(--tone); outline-offset: -2px; }
   .tile b { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(3rem, 5.4vw, 5rem); line-height: 0.95; }
@@ -29,8 +29,9 @@
 <div class="wrap tone-{% if index %}info{% else %}{{ e.tone }}{% endif %}">
 {% if index %}
   <p class="kicker">Every response the site can send</p>
-  <h1 class="title">Error codes</h1>
+  <h1 class="title" data-split>Error codes</h1>
   <p class="lede">Each tile opens that page and answers with its real HTTP status code, so you can also see it in your browser's network panel. 202 is not an error: it means the request was accepted. <strong>FC-100</strong> is specific to FoleyCraft.</p>
+  <div class="mq" aria-hidden="true"><div class="mq-track">{% for item in items %}<span>{{ item.code }}</span>{% endfor %}{% for item in items %}<span>{{ item.code }}</span>{% endfor %}</div></div>
   <div class="grid">
     {% for item in items %}
       <a class="tile tone-{{ item.tone }}" href="/status/{{ item.code }}/">
@@ -51,7 +52,7 @@
         <svg viewBox="0 0 56 56"><path d="M28 2l26 50H2Z" fill="var(--tone)" /></svg>
       </div>
       <p class="kicker">{{ code }} · {{ e.title }}</p>
-      <h1 class="headline">{{ e.headline }}</h1>
+      <h1 class="headline" data-split>{{ e.headline }}</h1>
       <p class="message">{{ e.message }}</p>
       <p class="help"><strong>Why it happens:</strong> {{ e.cause }}<br /><strong>What to do:</strong> {{ e.fix }}</p>
       <div class="actions">
@@ -66,12 +67,7 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-<script>
-  // "Ask the assistant" buttons open the chat widget with a ready-made question.
-  document.addEventListener('click', function (ev) {
-    var b = ev.target.closest('[data-ask]');
-    if (b) window.dispatchEvent(new CustomEvent('foley:assistant-open', { detail: b.getAttribute('data-ask') }));
-  });
-</script>
-{% endblock %}
+{# "Ask the assistant" buttons ([data-ask]) are handled by base.html. #}
+{# Error pages stay focused: no shapes or closing band on a single error; the index page gets both. #}
+{% block shapes %}{% if index %}{{ block.super }}{% endif %}{% endblock %}
+{% block closing %}{% if index %}{{ block.super }}{% endif %}{% endblock %}

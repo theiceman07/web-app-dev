@@ -1,5 +1,11 @@
+import Lenis from 'lenis';
 import { createRoot } from 'react-dom/client';
 import { Assistant } from './components/Assistant';
+
+// Smooth scrolling, the same as on the home page. Skipped for people who prefer reduced motion.
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  new Lenis({ lerp: 0.085, smoothWheel: true, autoRaf: true });
+}
 
 /**
  * Standalone build of the chat assistant for the server-rendered pages

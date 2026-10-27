@@ -15,14 +15,20 @@
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&icon_names=add,air,album,arrow_back,arrow_forward,arrow_outward,auto_awesome,bolt,bug_report,chat_bubble,check,close,data_object,delete,deployed_code,download,edit,error,expand_less,expand_more,fireplace,folder_open,footprint,forest,graphic_eq,hardware,headphones,help,home,info,keyboard,local_fire_department,pause,play_arrow,progress_activity,rainy,redo,refresh,remove,restart_alt,save,schedule,search,search_off,send,sensors,speed,stop,thumb_down,thumb_up,thunderstorm,touch_app,tune,undo,volume_off,volume_up,warning,water_drop,waves&display=block"
     />
     <link rel="stylesheet" href="/static/assets/widget.css" />
+    <script>document.documentElement.classList.add('js');</script>
     <style>
+      /* Same design language as the home page: black ground, white type, Anton display type,
+         flat saturated colour, hairline rules, shapes that react to the pointer. */
       :root {
         --pink: #ff3254; --cyan: #19f3ff; --orange: #ff8a3d; --yellow: #ffc93c; --purple: #6b3df5; --lime: #a5f25a;
         --grey: #a2a2a2; --text2: #cfcfcf; --rule: rgba(255, 255, 255, 0.28);
         --gutter: clamp(16px, 3.2vw, 44px);
+        --display: 'Anton', Impact, sans-serif;
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; background: #000; color: #fff; }
+      html.lenis, html.lenis body { height: auto; }
+      .lenis.lenis-smooth { scroll-behavior: auto !important; }
       body {
         min-height: 100vh; display: flex; flex-direction: column;
         font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 18px; line-height: 1.45;
@@ -34,19 +40,37 @@
       .skip { position: absolute; left: -999px; top: 0; background: #fff; color: #000; padding: 10px 16px; z-index: 100; }
       .skip:focus { left: 8px; top: 8px; }
 
-      header.site { padding: 0 var(--gutter); display: flex; align-items: center; justify-content: space-between; gap: 16px 28px; flex-wrap: wrap; min-height: 64px; }
-      .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: 'Anton', Impact, sans-serif; font-size: 26px; line-height: 1; padding: 12px 0; }
-      nav.site { display: flex; gap: 4px 26px; flex-wrap: wrap; font-size: 17px; font-weight: 600; }
-      nav.site a { padding: 10px 0; text-decoration: none; border-bottom: 2px solid transparent; transition: color 150ms ease; }
-      nav.site a:hover { color: var(--cyan); }
-      nav.site a[aria-current='page'] { border-bottom-color: #fff; }
+      /* ---- Top bar (fixed, with scroll progress) ---- */
+      .top { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: 64px; padding: 0 var(--gutter); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(16px, 4vw, 64px); background: #000; }
+      .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: var(--display); font-size: 26px; line-height: 1; letter-spacing: 0.01em; }
+      .progress { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--grey); }
+      .progress i { flex: 1; height: 1px; background: var(--rule); position: relative; }
+      .progress b { position: absolute; left: 0; top: -1px; height: 3px; width: calc(var(--p, 0) * 100%); background: #fff; }
+      .top-links { display: flex; align-items: center; gap: clamp(16px, 2.2vw, 30px); }
+      .top-links a, .menu summary { font-family: var(--display); font-size: 20px; letter-spacing: 0.02em; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 6px; transition: color 150ms ease; }
+      .top-links a:hover, .menu summary:hover { color: var(--cyan); }
+      .top-links a[aria-current='page'] { color: var(--cyan); }
+      .menu { display: none; }
+      .menu summary { list-style: none; cursor: pointer; padding: 10px 0; }
+      .menu summary::-webkit-details-marker { display: none; }
+      .menu summary::before { content: 'menu'; }
+      .menu[open] summary::before { content: 'close'; }
+      .menu-panel { position: fixed; top: 64px; left: 0; right: 0; bottom: 0; background: #000; padding: 24px var(--gutter) 48px; display: flex; flex-direction: column; justify-content: flex-start; gap: 4px; overflow-y: auto; }
+      .menu-panel a { font-family: var(--display); font-size: clamp(2.8rem, 14vw, 5rem); line-height: 1.05; text-decoration: none; border-top: 1px solid var(--rule); padding: 10px 0; }
+      .menu-panel a:hover, .menu-panel a[aria-current='page'] { color: var(--cyan); }
 
-      main { flex: 1; padding: 0 var(--gutter) clamp(48px, 7vw, 96px); }
+      main { flex: 1; padding: 64px var(--gutter) clamp(48px, 7vw, 96px); }
       .wrap { border-top: 1px solid var(--rule); padding-top: clamp(24px, 4vw, 56px); }
       .kicker { font-size: 15px; color: var(--grey); margin-bottom: 8px; }
-      h1.title { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(3rem, 8vw, 7.5rem); line-height: 0.96; }
+      h1.title { font-family: var(--display); font-weight: 400; font-size: clamp(3.5rem, 11vw, 10.5rem); line-height: 0.94; }
       .lede { margin-top: 20px; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.35; color: var(--text2); max-width: 34em; }
 
+      /* ---- Shape field (reacts to the pointer, like the home page) ---- */
+      .fx-field { display: block; width: 100%; height: auto; margin: clamp(12px, 2vw, 28px) 0 clamp(8px, 2vw, 24px); overflow: visible; }
+      .fx-shape { transform-box: fill-box; transform-origin: center; transform: translate(calc(var(--mx, 0) * var(--d)), calc(var(--my, 0) * var(--d) * 0.6)) rotate(var(--rot)); transition: transform 700ms cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; }
+      .fx-shape:hover { transform: translate(calc(var(--mx, 0) * var(--d)), calc(var(--my, 0) * var(--d) * 0.6)) rotate(calc(var(--rot) + 90deg)) scale(1.15); }
+
+      /* ---- Buttons ---- */
       .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 0 30px; border-radius: 999px; background: #fff; color: #000; text-decoration: none; border: 0; font: 700 18px 'Hanken Grotesk', sans-serif; cursor: pointer; transition: background 160ms ease, transform 160ms ease; }
       .btn:hover { background: var(--cyan); }
       .btn:active { transform: scale(0.97); }
@@ -55,16 +79,54 @@
       .link:hover { color: var(--cyan); }
       .actions { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; margin-top: 28px; }
 
-      footer.site { padding: 28px var(--gutter) 40px; border-top: 1px solid var(--rule); font-size: 15px; color: var(--grey); display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
-      footer.site a { color: #fff; }
+      /* ---- Marquee (CSS only) ---- */
+      .mq { margin: clamp(28px, 4vw, 56px) calc(-1 * var(--gutter)) 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); overflow: hidden; }
+      .mq-track { display: flex; width: max-content; animation: mq 38s linear infinite; }
+      .mq-track span { font-family: var(--display); font-size: clamp(3rem, 8vw, 7rem); line-height: 1.1; white-space: nowrap; padding: 0 0.25em 0 0; display: inline-flex; align-items: center; }
+      .mq-track span::after { content: ''; width: 0.26em; height: 0.26em; border-radius: 50%; background: var(--pink); margin-left: 0.3em; }
+      .mq.alt .mq-track span { color: transparent; -webkit-text-stroke: 1.5px #fff; }
+      .mq.alt .mq-track span::after { background: var(--cyan); }
+      @keyframes mq { to { transform: translateX(-50%); } }
 
-      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+      /* ---- Closing colour field and wordmark footer ---- */
+      .closing { background: var(--pink); color: #000; padding: clamp(56px, 8vw, 120px) var(--gutter); }
+      .closing h2 { font-family: var(--display); font-weight: 400; font-size: clamp(3.5rem, 12vw, 12rem); line-height: 0.92; max-width: 9em; }
+      .closing p { margin-top: 24px; font-size: clamp(20px, 2vw, 28px); font-weight: 600; line-height: 1.25; max-width: 24em; }
+      .closing .btn { background: #000; color: #fff; }
+      .closing .btn:hover { background: #fff; color: #000; }
+      .closing .link { color: #000; }
+      .closing .link:hover { color: #fff; }
+      footer.site { padding: 56px var(--gutter) 0; overflow: hidden; }
+      .foot-links { display: flex; flex-wrap: wrap; gap: 8px 32px; }
+      .foot-links a { padding: 10px 0; font-size: 18px; font-weight: 600; text-decoration: underline; text-underline-offset: 6px; transition: color 150ms ease; }
+      .foot-links a:hover { color: var(--cyan); }
+      .foot-meta { margin-top: 16px; font-size: 15px; color: var(--grey); }
+      .wordmark { font-family: var(--display); font-size: 22.5vw; line-height: 0.86; margin: 40px 0 -0.14em; white-space: nowrap; user-select: none; }
+
+      /* ---- Reveal on scroll (only when JavaScript runs; never hides content without it) ---- */
+      .js .rv { opacity: 0; transform: translateY(28px); transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: var(--d, 0s); }
+      .js .rv.in { opacity: 1; transform: none; }
+      .fx-word { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+      .fx-word-inner { display: inline-block; transform: translateY(115%); transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: var(--wd, 0s); }
+      .in .fx-word-inner, .fx-in .fx-word-inner { transform: none; }
+
+      @media (max-width: 900px) {
+        .top { grid-template-columns: 1fr auto; }
+        .progress, .top-links { display: none; }
+        .menu { display: block; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; }
+        .mq-track { animation: none; }
+        .js .rv { opacity: 1; transform: none; }
+        .fx-word-inner { transform: none; }
+      }
     </style>
     {% block head %}{% endblock %}
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
-    <header class="site">
+    <header class="top">
       <a class="brand" href="/" aria-label="FoleyCraft home">
         <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
           <circle cx="9" cy="9" r="8" fill="#ff3254" />
@@ -72,26 +134,112 @@
         </svg>
         foleycraft
       </a>
-      <nav class="site" aria-label="Main">
-        <a href="/">Home</a>
-        <a href="/#studio">Studio</a>
-        <a href="/faq/" {% if nav == 'faq' %}aria-current="page"{% endif %}>FAQ</a>
-        <a href="/support/" {% if nav == 'support' %}aria-current="page"{% endif %}>Support</a>
-        <a href="/status/" {% if nav == 'errors' %}aria-current="page"{% endif %}>Errors</a>
-        <a href="/health/" {% if nav == 'health' %}aria-current="page"{% endif %}>Health</a>
+      <div class="progress" aria-hidden="true"><span>top</span><i><b></b></i><span>end</span></div>
+      <nav class="top-links" aria-label="Main">
+        <a href="/">home</a>
+        <a href="/#studio">studio</a>
+        <a href="/faq/" {% if nav == 'faq' %}aria-current="page"{% endif %}>faq</a>
+        <a href="/support/" {% if nav == 'support' %}aria-current="page"{% endif %}>support</a>
+        <a href="/status/" {% if nav == 'errors' %}aria-current="page"{% endif %}>errors</a>
+        <a href="/health/" {% if nav == 'health' %}aria-current="page"{% endif %}>health</a>
       </nav>
+      <details class="menu">
+        <summary aria-label="Menu"></summary>
+        <nav class="menu-panel" aria-label="Main (menu)" data-lenis-prevent>
+          <a href="/">home</a>
+          <a href="/#studio">studio</a>
+          <a href="/faq/" {% if nav == 'faq' %}aria-current="page"{% endif %}>faq</a>
+          <a href="/support/" {% if nav == 'support' %}aria-current="page"{% endif %}>support</a>
+          <a href="/status/" {% if nav == 'errors' %}aria-current="page"{% endif %}>errors</a>
+          <a href="/health/" {% if nav == 'health' %}aria-current="page"{% endif %}>health</a>
+        </nav>
+      </details>
     </header>
 
-    <main id="main">{% block content %}{% endblock %}</main>
+    <main id="main">
+      {% block shapes %}
+      <svg class="fx-field" viewBox="0 0 1200 260" role="img" aria-label="Decorative field of coloured geometric shapes">
+        <g transform="translate(60 150)"><g class="fx-shape" style="--d:14px;--rot:0deg"><circle r="35" fill="#ff3254" /></g></g>
+        <g transform="translate(180 90)"><g class="fx-shape" style="--d:-18px;--rot:20deg"><path d="M-31 15.5A31 31 0 0 1 31 15.5Z" fill="#19f3ff" /></g></g>
+        <g transform="translate(300 170)"><g class="fx-shape" style="--d:22px;--rot:0deg"><rect x="-28" y="-8.4" width="56" height="16.8" fill="#ffc93c" /><rect x="-8.4" y="-28" width="16.8" height="56" fill="#ffc93c" /></g></g>
+        <g transform="translate(430 100)"><g class="fx-shape" style="--d:-12px;--rot:0deg"><path d="M-35 35L-35 -35A70 70 0 0 1 35 35Z" fill="#6b3df5" /></g></g>
+        <g transform="translate(560 160)"><g class="fx-shape" style="--d:18px;--rot:0deg"><path d="M0 -30L28.5 24L-28.5 24Z" fill="#ff8a3d" /></g></g>
+        <g transform="translate(690 90)"><g class="fx-shape" style="--d:-22px;--rot:0deg"><rect x="-20.28" y="-20.28" width="40.56" height="40.56" transform="rotate(45)" fill="#a5f25a" /></g></g>
+        <g transform="translate(810 165)"><g class="fx-shape" style="--d:12px;--rot:0deg"><circle r="28" fill="#19f3ff" /></g></g>
+        <g transform="translate(930 95)"><g class="fx-shape" style="--d:-16px;--rot:-15deg"><path d="M-34 17A34 34 0 0 1 34 17Z" fill="#ff3254" /></g></g>
+        <g transform="translate(1050 160)"><g class="fx-shape" style="--d:20px;--rot:90deg"><path d="M-32 32L-32 -32A64 64 0 0 1 32 32Z" fill="#ffc93c" /></g></g>
+        <g transform="translate(1150 90)"><g class="fx-shape" style="--d:-10px;--rot:0deg"><rect x="-24" y="-7.2" width="48" height="14.4" fill="#6b3df5" /><rect x="-7.2" y="-24" width="14.4" height="48" fill="#6b3df5" /></g></g>
+      </svg>
+      {% endblock %}
+      {% block content %}{% endblock %}
+    </main>
+
+    {% block closing %}
+    <section class="closing" aria-labelledby="closing-title">
+      <h2 id="closing-title" data-split>Put on headphones.</h2>
+      <p>Drag, listen, then export 16-bit WAV loops for Unity, Unreal and Godot.</p>
+      <div class="actions">
+        <a class="btn" href="/#studio">Open the studio <span class="ms" aria-hidden="true">arrow_forward</span></a>
+        <button class="link" type="button" data-ask=""><span class="ms" aria-hidden="true">chat_bubble</span>Ask the assistant</button>
+      </div>
+    </section>
+    {% endblock %}
 
     <footer class="site">
-      <span>FoleyCraft © 2026. Runs in your browser on the Web Audio API.</span>
-      <span><a href="/faq/">FAQ</a> · <a href="/support/">Support</a> · <a href="/status/">Error codes</a> · <a href="/health/">Health</a></span>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="/">Home</a><a href="/#studio">Studio</a><a href="/faq/">FAQ</a><a href="/support/">Support</a><a href="/status/">Error codes</a><a href="/health/">Health</a>
+      </nav>
+      <p class="foot-meta">FoleyCraft © 2026. Runs in your browser on the Web Audio API.</p>
+      <div class="wordmark" aria-hidden="true">foleycraft</div>
     </footer>
 
     <!-- Chat widget: the same assistant as on the home page, loaded on every server-rendered page. -->
     <div id="fc-widget"></div>
     {% block scripts %}{% endblock %}
+    <script>
+      (function () {
+        var root = document.documentElement;
+        // Scroll progress in the top bar.
+        function progress() { var max = root.scrollHeight - innerHeight; root.style.setProperty('--p', max > 0 ? (scrollY / max).toFixed(4) : 0); }
+        addEventListener('scroll', progress, { passive: true }); progress();
+
+        // Shapes drift with the pointer.
+        var field = document.querySelector('.fx-field');
+        if (field && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          field.addEventListener('pointermove', function (e) {
+            var r = field.getBoundingClientRect();
+            field.style.setProperty('--mx', ((e.clientX - r.left) / r.width - 0.5) * 2);
+            field.style.setProperty('--my', ((e.clientY - r.top) / r.height - 0.5) * 2);
+          });
+        }
+
+        // Headings: words rise out of a mask. The observer watches the heading, not the words.
+        var io = 'IntersectionObserver' in window ? new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+        }, { threshold: 0.15, rootMargin: '0px 0px -6% 0px' }) : null;
+        document.querySelectorAll('[data-split]').forEach(function (h) {
+          var text = h.textContent.trim(); h.setAttribute('aria-label', text); h.textContent = '';
+          text.split(/\s+/).forEach(function (w, i, all) {
+            var outer = document.createElement('span'); outer.className = 'fx-word'; outer.setAttribute('aria-hidden', 'true');
+            var inner = document.createElement('span'); inner.className = 'fx-word-inner'; inner.style.setProperty('--wd', (i * 0.07) + 's'); inner.textContent = w;
+            outer.appendChild(inner); if (i < all.length - 1) outer.appendChild(document.createTextNode(' ')); h.appendChild(outer);
+          });
+          if (io) io.observe(h); else h.classList.add('in');
+        });
+
+        // Blocks fade up as they scroll into view.
+        document.querySelectorAll('main .lede, main .panel, main .group, main .tile, main .check, main .facts, main .tablewrap, main .done, main .overall, main .search, .closing p, .closing .actions').forEach(function (el, i) {
+          el.classList.add('rv'); el.style.setProperty('--d', ((i % 4) * 0.06) + 's');
+          if (io) io.observe(el); else el.classList.add('in');
+        });
+
+        // "Ask the assistant" buttons open the chat widget.
+        document.addEventListener('click', function (ev) {
+          var b = ev.target.closest('[data-ask]');
+          if (b) window.dispatchEvent(new CustomEvent('foley:assistant-open', { detail: b.getAttribute('data-ask') || undefined }));
+        });
+      })();
+    </script>
     <script type="module" src="/static/assets/widget.js"></script>
   </body>
 </html>

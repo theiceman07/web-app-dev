@@ -35,10 +35,11 @@
   <div class="lead">
     <div>
       <p class="kicker"><span id="faq-count">{{ count }}</span> questions, answered</p>
-      <h1 class="title">FAQ</h1>
+      <h1 class="title" data-split>FAQ</h1>
     </div>
     <p class="lede">Quick answers about the studio, exporting and support. Can't find yours? Ask the assistant, or open a ticket.</p>
   </div>
+  <div class="mq alt" aria-hidden="true"><div class="mq-track">{% for category, items in groups.items %}<span>{{ category }}</span>{% endfor %}{% for category, items in groups.items %}<span>{{ category }}</span>{% endfor %}</div></div>
 
   <label class="search">
     <span>Search the questions</span>
@@ -51,7 +52,7 @@
   <div id="faq-list" aria-live="polite">
   {% for category, items in groups.items %}
   <section class="group" aria-labelledby="cat-{{ forloop.counter }}">
-    <h2 id="cat-{{ forloop.counter }}">{{ category }}</h2>
+    <h2 id="cat-{{ forloop.counter }}" data-split>{{ category }}</h2>
     {% for f in items %}
     <details data-text="{{ f.question|lower }} {{ f.answer|lower }} {{ f.keywords|lower }}">
       <summary>{{ f.question }}<span class="ms" aria-hidden="true">expand_more</span></summary>
@@ -64,15 +65,18 @@
   {% endfor %}
   </div>
 
-  <section class="more">
-    <h2>Still stuck?</h2>
-    <p>The assistant answers from this FAQ. If it can't, it opens a support ticket for you.</p>
-    <div class="actions">
-      <button class="btn" type="button" data-ask="">Ask the assistant</button>
-      <a class="link" href="/support/">Open a ticket</a>
-    </div>
-  </section>
 </div>
+{% endblock %}
+
+{% block closing %}
+<section class="closing" style="background: var(--yellow)" aria-labelledby="stuck-title">
+  <h2 id="stuck-title" data-split>Still stuck?</h2>
+  <p>The assistant answers from this FAQ. If it can't, it opens a support ticket for you.</p>
+  <div class="actions">
+    <button class="btn" type="button" data-ask="">Ask the assistant <span class="ms" aria-hidden="true">chat_bubble</span></button>
+    <a class="link" href="/support/">Open a ticket</a>
+  </div>
+</section>
 {% endblock %}
 
 {% block scripts %}
@@ -115,10 +119,6 @@
     });
     document.querySelectorAll('.group').forEach(function (g) { g.hidden = !g.querySelector('details:not([hidden])'); });
     empty.hidden = shown !== 0;
-  });
-  document.addEventListener('click', function (ev) {
-    var b = ev.target.closest('[data-ask]');
-    if (b) window.dispatchEvent(new CustomEvent('foley:assistant-open', { detail: b.getAttribute('data-ask') || undefined }));
   });
 </script>
 {% endblock %}

@@ -9,11 +9,14 @@
   .overall.ok { background: var(--lime); } .overall.degraded { background: var(--yellow); } .overall.down { background: var(--pink); }
   .overall i { width: 14px; height: 14px; border-radius: 50%; background: #000; }
   .checks { margin-top: clamp(28px, 4vw, 48px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-  .check { padding: 20px; border: 1.5px solid var(--rule); min-height: 170px; display: flex; flex-direction: column; gap: 8px; }
-  .check h2 { font-size: 16px; font-weight: 600; color: var(--grey); }
-  .pill { align-self: flex-start; padding: 4px 14px; border-radius: 999px; font-weight: 800; font-size: 16px; color: #000; }
-  .pill.ok { background: var(--lime); } .pill.degraded, .pill.not_configured { background: var(--yellow); } .pill.down { background: var(--pink); }
-  .check p { font-size: 15px; color: var(--text2); line-height: 1.35; }
+  /* Each service is a flat colour block: lime = ok, yellow = warning, pink = down. */
+  .check { --c: var(--lime); background: var(--c); color: #000; padding: 22px; min-height: 210px; display: flex; flex-direction: column; gap: 10px; transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1); }
+  .check[data-s='degraded'], .check[data-s='not_configured'] { --c: var(--yellow); }
+  .check[data-s='down'] { --c: var(--pink); }
+  .check:hover { transform: translateY(-6px); }
+  .check h2 { font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 2.6vw, 2.4rem); line-height: 1; }
+  .pill { align-self: flex-start; padding: 4px 14px; border-radius: 999px; font-weight: 800; font-size: 16px; background: #000; color: #fff; }
+  .check p { font-size: 15px; color: #000; line-height: 1.35; font-weight: 500; }
   .facts { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px 36px; font-size: 16px; color: var(--grey); }
   .facts b { color: #fff; font-weight: 700; }
   h2.sub { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(2rem, 4vw, 3.2rem); margin: clamp(36px, 5vw, 64px) 0 16px; line-height: 1; }
@@ -30,12 +33,12 @@
 {% block content %}
 <div class="wrap">
   <p class="kicker">Checked just now · {{ h.time }}</p>
-  <h1 class="title">Health</h1>
+  <h1 class="title" data-split>Health</h1>
   <p class="overall {{ h.status }}" role="status"><i aria-hidden="true"></i>{% if h.status == 'ok' %}All systems working{% elif h.status == 'degraded' %}Working, with a warning{% else %}A required service is down{% endif %}</p>
 
   <div class="checks">
     {% for name, c in checks %}
-    <section class="check" aria-label="{{ name }}">
+    <section class="check" data-s="{{ c.status }}" aria-label="{{ name }}">
       <h2>{% if name == 'sql_database' %}SQL database{% elif name == 'mongodb' %}MongoDB{% elif name == 'ai_service' %}AI service{% else %}Weather API{% endif %}</h2>
       <span class="pill {{ c.status }}">{% if c.status == 'not_configured' %}not configured{% else %}{{ c.status }}{% endif %}</span>
       <p>{{ c.detail }}{% if c.ms %} · {{ c.ms }} ms{% endif %}</p>
@@ -51,9 +54,9 @@
     <span><a href="/api/health/">JSON</a> · <a href="/health/?deep=1">Run live weather check</a></span>
   </p>
 
-  <h2 class="sub">Recent requests</h2>
+  <h2 class="sub" data-split>Recent requests</h2>
   <p class="kicker">Newest first, from this server instance. Every request is also logged as one JSON line.</p>
-  <div class="tablewrap" tabindex="0">
+  <div class="tablewrap" tabindex="0" data-lenis-prevent>
     <table>
       <thead><tr><th>Time (UTC)</th><th>Method</th><th>Path</th><th>Status</th><th>ms</th><th>Request id</th></tr></thead>
       <tbody>
