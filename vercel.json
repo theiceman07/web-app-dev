@@ -1,4 +1,6 @@
 {
+  "installCommand": "npm --prefix arjun_project/arjun_app/frontend ci",
+  "buildCommand": "npm --prefix arjun_project/arjun_app/frontend run build",
   "functions": {
     "api/index.py": {
       "maxDuration": 30,

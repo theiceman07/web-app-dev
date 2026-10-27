@@ -100,6 +100,52 @@ class AssistantTests(TestCase):
         self.assertEqual(codes[:-1], [200] * views.RATE_LIMIT)
         self.assertEqual(codes[-1], 429)
 
+    @override_settings(GOOGLE_API_KEY='test-key', UPSTASH_REDIS_REST_URL='https://r.example', UPSTASH_REDIS_REST_TOKEN='tok')
+    def test_shared_store_is_used_when_configured(self):
+        fake = {'candidates': [{'content': {'parts': [{'text': 'ok'}]}}]}
+        with mock.patch.object(views, '_shared_count', return_value=views.RATE_LIMIT + 1) as shared, \
+                mock.patch.object(views, '_call_gemini', return_value=fake) as gemini:
+            r = self.post({'messages': [{'role': 'user', 'text': 'hi'}]})
+        self.assertEqual(r.status_code, 429)
+        shared.assert_called_once()
+        gemini.assert_not_called()
+
+    @override_settings(GOOGLE_API_KEY='test-key', UPSTASH_REDIS_REST_URL='https://r.example', UPSTASH_REDIS_REST_TOKEN='tok')
+    def test_shared_store_outage_falls_back_to_local_counter(self):
+        fake = {'candidates': [{'content': {'parts': [{'text': 'ok'}]}}]}
+        with mock.patch.object(views, '_shared_count', side_effect=OSError('redis down')), \
+                mock.patch.object(views, '_call_gemini', return_value=fake):
+            r = self.post({'messages': [{'role': 'user', 'text': 'hi'}]})
+        self.assertEqual(r.status_code, 200)
+
+    def test_shared_count_sends_the_expected_redis_pipeline(self):
+        class FakeResponse:
+            def read(self):
+                return b'[{"result":"OK"},{"result":7}]'
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        with override_settings(UPSTASH_REDIS_REST_URL='https://r.example/', UPSTASH_REDIS_REST_TOKEN='tok'):
+            with mock.patch.object(views.urllib.request, 'urlopen', return_value=FakeResponse()) as op:
+                self.assertEqual(views._shared_count('assistant:1.2.3.4'), 7)
+        req = op.call_args[0][0]
+        self.assertEqual(req.full_url, 'https://r.example/pipeline')
+        self.assertEqual(req.get_header('Authorization'), 'Bearer tok')
+        self.assertEqual(json.loads(req.data), [['SET', 'assistant:1.2.3.4', 0, 'EX', 60, 'NX'], ['INCR', 'assistant:1.2.3.4']])
+
+    def test_client_ip_uses_forwarded_header_only_on_vercel(self):
+        from django.test import RequestFactory
+
+        req = RequestFactory().post('/api/assistant/', HTTP_X_FORWARDED_FOR='9.9.9.9, 10.0.0.1', REMOTE_ADDR='127.0.0.1')
+        with override_settings(ON_VERCEL=True):
+            self.assertEqual(views._client_ip(req), '9.9.9.9')
+        with override_settings(ON_VERCEL=False):
+            self.assertEqual(views._client_ip(req), '127.0.0.1')
+
     @override_settings(GOOGLE_API_KEY='test-key')
     def test_key_is_never_in_the_response(self):
         with mock.patch.object(views, '_call_gemini', side_effect=OSError('boom')):

@@ -24,7 +24,7 @@ npm run build   # type-checks, builds, and copies the output into Django
 
 The repo is ready for Vercel as-is: `vercel.json` routes everything to the Django function in `api/index.py`, `requirements.txt` and `.python-version` tell Vercel what to install, and the built frontend is served from `public/static/`.
 
-1. Import the repo at vercel.com/new. Leave **Root Directory** as the repo root, Framework Preset as **Other**, and the build and install commands empty.
+1. Import the repo at vercel.com/new. Leave **Root Directory** as the repo root and Framework Preset as **Other**. Do not override the build or install commands: `vercel.json` already runs `npm ci` and the Vite build for you. Use Node 22 or newer (Project Settings, General, Node.js Version).
 2. Add these **Environment Variables** (Project Settings, Environment Variables):
 
    | Name | Value |
@@ -35,9 +35,10 @@ The repo is ready for Vercel as-is: `vercel.json` routes everything to the Djang
    | `DJANGO_ALLOWED_HOSTS` | only if you add a custom domain, e.g. `example.com` |
 
    `*.vercel.app` hosts work without the last two. The site refuses to start without `DJANGO_SECRET_KEY`.
-3. Deploy. After changing the UI, run `npm run build` in `arjun_project/arjun_app/frontend` and commit the output (`public/static`, `arjun_app/statics`, `arjun_app/template/index.html`), because Vercel does not run the Vite build.
+3. Optional but recommended: in the project's **Storage** tab, add an **Upstash Redis** database. Vercel then sets `KV_REST_API_URL` and `KV_REST_API_TOKEN`, and the assistant's 20-requests-a-minute limit becomes shared across all serverless instances. Without it the limit is per instance, so it is only a soft limit.
+4. Deploy. Every deploy rebuilds the frontend, so UI changes need no extra step. The built files are also committed (`public/static`, `arjun_app/statics`, `arjun_app/template/index.html`) so local runs work without Node.
 
-Notes: the site has no database, accounts or admin. The assistant's rate limit is kept in memory per serverless instance, so it is a soft limit on Vercel.
+Notes: the site has no database, accounts or admin. If the shared store is unreachable the limiter falls back to the per-instance counter, so the assistant keeps working.
 
 ## Pages
 

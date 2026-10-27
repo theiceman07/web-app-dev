@@ -138,18 +138,48 @@ def _call_gemini(model, body):
         return json.loads(resp.read().decode('utf-8'))
 
 
+def _client_ip(request):
+    # On Vercel the platform sets X-Forwarded-For, so its first entry is the real client.
+    if settings.ON_VERCEL:
+        forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        if forwarded:
+            return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', 'unknown')
+
+
+def _shared_count(bucket):
+    """Count a request in Upstash Redis (Vercel KV), shared by every serverless instance."""
+    body = json.dumps([['SET', bucket, 0, 'EX', 60, 'NX'], ['INCR', bucket]]).encode('utf-8')
+    req = urllib.request.Request(
+        settings.UPSTASH_REDIS_REST_URL.rstrip('/') + '/pipeline',
+        data=body,
+        headers={'Authorization': f'Bearer {settings.UPSTASH_REDIS_REST_TOKEN}', 'Content-Type': 'application/json'},
+        method='POST',
+    )
+    with urllib.request.urlopen(req, timeout=3) as resp:
+        return int(json.loads(resp.read().decode('utf-8'))[1]['result'])
+
+
+def _request_count(bucket):
+    """Requests in the last minute for this client. Shared store if configured, else per-process."""
+    if settings.UPSTASH_REDIS_REST_URL and settings.UPSTASH_REDIS_REST_TOKEN:
+        try:
+            return _shared_count(bucket)
+        except (OSError, ValueError, KeyError, IndexError, TypeError):
+            pass  # the limiter must never take the assistant down; use the local counter
+    cache.add(bucket, 0, 60)
+    try:
+        return cache.incr(bucket)
+    except ValueError:
+        return 1
+
+
 @require_POST
 def assistant(request):
     if not settings.GOOGLE_API_KEY:
         return _error(503, 'not_configured', 'The assistant is not set up yet. Add GOOGLE_API_KEY to the .env file and restart the server.')
 
-    client = request.META.get('REMOTE_ADDR', 'unknown')
-    bucket = f'assistant:{client}'
-    cache.add(bucket, 0, 60)
-    try:
-        used = cache.incr(bucket)
-    except ValueError:
-        used = 1
+    used = _request_count(f'assistant:{_client_ip(request)}')
     if used > RATE_LIMIT:
         return _error(429, 'rate_limited', 'Too many questions in a minute. Wait a little and try again.')
 

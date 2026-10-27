@@ -36,7 +36,11 @@ _load_env(BASE_DIR / '.env')
 # Gemini assistant. The key is read on the server only and never sent to the browser.
 GOOGLE_API_KEY = os.environ.get('GOOGLE_API_KEY', '')
 GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
-GEMINI_FALLBACK_MODELS = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash']
+# Optional shared rate-limit store (Upstash Redis). Vercel's Upstash/KV integration
+# sets KV_REST_API_URL and KV_REST_API_TOKEN; the UPSTASH_* names work too.
+UPSTASH_REDIS_REST_URL = os.environ.get('UPSTASH_REDIS_REST_URL') or os.environ.get('KV_REST_API_URL', '')
+UPSTASH_REDIS_REST_TOKEN = os.environ.get('UPSTASH_REDIS_REST_TOKEN') or os.environ.get('KV_REST_API_TOKEN', '')
+GEMINI_FALLBACK_MODELS =['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash']
 
 
 # Quick-start development settings - unsuitable for production
