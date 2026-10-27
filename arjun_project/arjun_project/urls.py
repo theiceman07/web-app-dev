@@ -4,7 +4,6 @@ URL configuration for arjun_project project.
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.2/topics/http/urls/
 """
-from django.contrib import admin
 from django.urls import path, re_path
 
 from arjun_app import views
@@ -17,7 +16,6 @@ handler404 = 'arjun_app.views.handler404'
 handler500 = 'arjun_app.views.handler500'
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('', views.index, name='index'),
     path('api/assistant/', views.assistant, name='assistant'),
     path('status/', views.status_index, name='status-index'),

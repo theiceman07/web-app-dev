@@ -26,15 +26,19 @@ export default defineConfig({
             console.log('✓ Copied index.html to arjun_app/template/index.html')
           }
 
-          // Copy assets to ../statics/assets
+          // Copy assets to ../statics/assets (served by Django locally) and to
+          // <repo>/public/static/assets (served by Vercel). Old hashed files are
+          // removed first so stale bundles never ship.
           const assetsSrc = path.join(distDir, 'assets')
           if (fs.existsSync(assetsSrc)) {
-            const destAssets = path.join(staticsDir, 'assets')
-            if (!fs.existsSync(destAssets)) {
+            const publicStatic = path.resolve(import.meta.dirname, '../../../public/static')
+            for (const root of [staticsDir, publicStatic]) {
+              const destAssets = path.join(root, 'assets')
+              fs.rmSync(destAssets, { recursive: true, force: true })
               fs.mkdirSync(destAssets, { recursive: true })
+              fs.cpSync(assetsSrc, destAssets, { recursive: true })
             }
-            fs.cpSync(assetsSrc, destAssets, { recursive: true })
-            console.log('✓ Copied assets to arjun_app/statics/assets')
+            console.log('✓ Copied assets to arjun_app/statics/assets and public/static/assets')
           }
         }
       },

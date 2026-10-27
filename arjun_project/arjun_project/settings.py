@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -47,33 +49,48 @@ SECRET_KEY = os.environ.get(
     'REMOVED-no-key-is-stored-in-the-repository',
 )
 
+# Vercel sets VERCEL=1 at runtime. There, debug is off unless DJANGO_DEBUG=1.
+ON_VERCEL = bool(os.environ.get('VERCEL'))
+
 # SECURITY WARNING: don't run with debug turned on in production!
 # Debug stays on locally; set DJANGO_DEBUG=0 in production.
-DEBUG = os.environ.get('DJANGO_DEBUG', '1') != '0'
+DEBUG = os.environ.get('DJANGO_DEBUG', '0' if ON_VERCEL else '1') != '0'
+
+if not DEBUG and SECRET_KEY.startswith('django-insecure-'):
+    raise ImproperlyConfigured('Set DJANGO_SECRET_KEY (a long random string) when DEBUG is off.')
+
+
+def _csv(name):
+    return [v.strip() for v in os.environ.get(name, '').split(',') if v.strip()]
+
 
 # Comma-separated, e.g. DJANGO_ALLOWED_HOSTS=example.com,www.example.com
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()]
+ALLOWED_HOSTS = _csv('DJANGO_ALLOWED_HOSTS')
+# Origins allowed to POST (the assistant), e.g. https://example.com
+CSRF_TRUSTED_ORIGINS = _csv('DJANGO_CSRF_TRUSTED_ORIGINS')
+if ON_VERCEL:
+    ALLOWED_HOSTS += ['.vercel.app']
+    CSRF_TRUSTED_ORIGINS += ['https://*.vercel.app']
+
+if not DEBUG:
+    # Vercel terminates TLS and forwards the original scheme.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    CSRF_COOKIE_SECURE = True
 
 
 # Application definition
+# No admin, auth or sessions: the site has no accounts and no database writes,
+# which also keeps it working on Vercel's read-only filesystem.
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
     'django.contrib.staticfiles',
     'arjun_app',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -88,8 +105,6 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -143,7 +158,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+# Locally Django serves these. On Vercel the same files are served from public/static
+# (the Vite build copies them there), so STATIC_URL must stay '/static/'.
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'arjun_app' / 'statics',
 ]
