@@ -80,8 +80,9 @@
       .actions { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; margin-top: 28px; }
 
       /* ---- Marquee (CSS only) ---- */
-      .mq { margin: clamp(28px, 4vw, 56px) calc(-1 * var(--gutter)) 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); overflow: hidden; }
+      .mq { margin: clamp(28px, 4vw, 56px) calc(-1 * var(--gutter)) 0; padding: clamp(8px, 1.2vw, 16px) 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); overflow: hidden; }
       .mq-track { display: flex; width: max-content; animation: mq 38s linear infinite; }
+      .mq:hover .mq-track { animation-play-state: paused; }
       .mq-track span { font-family: var(--display); font-size: clamp(3rem, 8vw, 7rem); line-height: 1.1; white-space: nowrap; padding: 0 0.25em 0 0; display: inline-flex; align-items: center; }
       .mq-track span::after { content: ''; width: 0.26em; height: 0.26em; border-radius: 50%; background: var(--pink); margin-left: 0.3em; }
       .mq.alt .mq-track span { color: transparent; -webkit-text-stroke: 1.5px #fff; }
