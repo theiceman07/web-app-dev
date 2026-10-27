@@ -12,8 +12,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 from django.core.exceptions import ImproperlyConfigured
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,18 +42,21 @@ GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.5-flash')
 # sets KV_REST_API_URL and KV_REST_API_TOKEN; the UPSTASH_* names work too.
 UPSTASH_REDIS_REST_URL = os.environ.get('UPSTASH_REDIS_REST_URL') or os.environ.get('KV_REST_API_URL', '')
 UPSTASH_REDIS_REST_TOKEN = os.environ.get('UPSTASH_REDIS_REST_TOKEN') or os.environ.get('KV_REST_API_TOKEN', '')
-GEMINI_FALLBACK_MODELS =['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash']
+GEMINI_FALLBACK_MODELS = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash']
+# Seconds the assistant waits for Gemini before it falls back to FAQ search.
+GEMINI_TIMEOUT_S = float(os.environ.get('GEMINI_TIMEOUT_S', '9'))
+
+# MongoDB (chat logs and feedback). Optional: without it the site works, nothing is logged there.
+MONGODB_URI = os.environ.get('MONGODB_URI', '')
+MONGODB_DB = os.environ.get('MONGODB_DB', 'foleycraft')
+
+# Open-Meteo weather API (no key). Default location used when the visitor shares none.
+WEATHER_DEFAULT_LAT = float(os.environ.get('WEATHER_DEFAULT_LAT', '51.5074'))
+WEATHER_DEFAULT_LON = float(os.environ.get('WEATHER_DEFAULT_LON', '-0.1278'))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-# Set DJANGO_SECRET_KEY in the environment (or .env) for any real deployment.
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'REMOVED-no-key-is-stored-in-the-repository',
-)
 
 # Vercel sets VERCEL=1 at runtime. There, debug is off unless DJANGO_DEBUG=1.
 ON_VERCEL = bool(os.environ.get('VERCEL'))
@@ -60,8 +65,15 @@ ON_VERCEL = bool(os.environ.get('VERCEL'))
 # Debug stays on locally; set DJANGO_DEBUG=0 in production.
 DEBUG = os.environ.get('DJANGO_DEBUG', '0' if ON_VERCEL else '1') != '0'
 
-if not DEBUG and SECRET_KEY.startswith('django-insecure-'):
-    raise ImproperlyConfigured('Set DJANGO_SECRET_KEY (a long random string) when DEBUG is off.')
+# SECURITY WARNING: keep the secret key used in production secret!
+# No key is stored in the repository. Set DJANGO_SECRET_KEY in the environment.
+# Locally (DEBUG on) a random per-process key is used when none is set.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = get_random_secret_key()
+    else:
+        raise ImproperlyConfigured('Set DJANGO_SECRET_KEY (a long random string) when DEBUG is off.')
 
 
 def _csv(name):
@@ -92,6 +104,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'arjun_app.middleware.RequestLogMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -120,12 +133,48 @@ WSGI_APPLICATION = 'arjun_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+def _database():
+    """SQL database. Set DATABASE_URL (postgres://user:pass@host:5432/name) for a real
+    hosted database, such as Neon or Vercel Postgres. Without it, SQLite is used:
+    a local file in development and a throwaway file in /tmp on Vercel."""
+    url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL', '')
+    if url:
+        parsed = urlparse(url)
+        if parsed.scheme not in ('postgres', 'postgresql'):
+            raise ImproperlyConfigured('DATABASE_URL must start with postgres:// or postgresql://')
+        query = parse_qs(parsed.query)
+        options = {'sslmode': query.get('sslmode', ['require'])[0]}
+        return {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': parsed.path.lstrip('/'),
+            'USER': unquote(parsed.username or ''),
+            'PASSWORD': unquote(parsed.password or ''),
+            'HOST': parsed.hostname or '',
+            'PORT': parsed.port or 5432,
+            'OPTIONS': options,
+            # Serverless functions open a connection per request; poolers need this.
+            'CONN_MAX_AGE': 0,
+            'DISABLE_SERVER_SIDE_CURSORS': True,
+        }
+    path = Path('/tmp/db.sqlite3') if ON_VERCEL else BASE_DIR / 'db.sqlite3'
+    return {'ENGINE': 'django.db.backends.sqlite3', 'NAME': path}
+
+
+DATABASES = {'default': _database()}
+
+# Request logging goes to stdout (Vercel Logs) as one JSON line per request.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {'plain': {'format': '%(asctime)s %(levelname)s %(name)s %(message)s'}},
+    'handlers': {'console': {'class': 'logging.StreamHandler', 'formatter': 'plain'}},
+    'loggers': {
+        'foleycraft': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+    },
 }
+
+# A failed CSRF check shows the site's own 403 page.
+CSRF_FAILURE_VIEW = 'arjun_app.views.csrf_failure'
 
 
 # Password validation

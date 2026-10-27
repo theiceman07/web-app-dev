@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <title>{% block title %}FoleyCraft{% endblock %} — FoleyCraft</title>
+    <meta name="description" content="{% block description %}FoleyCraft: place sound around a listener and hear it in 3D.{% endblock %}" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FF3254' stroke-width='2'><path d='M2 10v3'/><path d='M6 6v11'/><path d='M10 3v18'/><path d='M14 8v7'/><path d='M18 5v13'/><path d='M22 10v3'/></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&icon_names=add,air,album,arrow_back,arrow_forward,arrow_outward,auto_awesome,bolt,bug_report,chat_bubble,check,close,data_object,delete,deployed_code,download,edit,error,expand_less,expand_more,fireplace,folder_open,footprint,forest,graphic_eq,hardware,headphones,help,home,info,keyboard,local_fire_department,pause,play_arrow,progress_activity,rainy,redo,refresh,remove,restart_alt,save,schedule,search,search_off,send,sensors,speed,stop,thumb_down,thumb_up,thunderstorm,touch_app,tune,undo,volume_off,volume_up,warning,water_drop,waves&display=block"
+    />
+    <link rel="stylesheet" href="/static/assets/widget.css" />
+    <style>
+      :root {
+        --pink: #ff3254; --cyan: #19f3ff; --orange: #ff8a3d; --yellow: #ffc93c; --purple: #6b3df5; --lime: #a5f25a;
+        --grey: #a2a2a2; --text2: #cfcfcf; --rule: rgba(255, 255, 255, 0.28);
+        --gutter: clamp(16px, 3.2vw, 44px);
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: #000; color: #fff; }
+      body {
+        min-height: 100vh; display: flex; flex-direction: column;
+        font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 18px; line-height: 1.45;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; }
+      h1, h2, h3, p { margin: 0; }
+      .ms { font-family: 'Material Symbols Outlined'; font-weight: normal; font-style: normal; line-height: 1; font-size: 22px; display: inline-block; white-space: nowrap; vertical-align: middle; font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+      .skip { position: absolute; left: -999px; top: 0; background: #fff; color: #000; padding: 10px 16px; z-index: 100; }
+      .skip:focus { left: 8px; top: 8px; }
+
+      header.site { padding: 0 var(--gutter); display: flex; align-items: center; justify-content: space-between; gap: 16px 28px; flex-wrap: wrap; min-height: 64px; }
+      .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-family: 'Anton', Impact, sans-serif; font-size: 26px; line-height: 1; padding: 12px 0; }
+      nav.site { display: flex; gap: 4px 26px; flex-wrap: wrap; font-size: 17px; font-weight: 600; }
+      nav.site a { padding: 10px 0; text-decoration: none; border-bottom: 2px solid transparent; transition: color 150ms ease; }
+      nav.site a:hover { color: var(--cyan); }
+      nav.site a[aria-current='page'] { border-bottom-color: #fff; }
+
+      main { flex: 1; padding: 0 var(--gutter) clamp(48px, 7vw, 96px); }
+      .wrap { border-top: 1px solid var(--rule); padding-top: clamp(24px, 4vw, 56px); }
+      .kicker { font-size: 15px; color: var(--grey); margin-bottom: 8px; }
+      h1.title { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(3rem, 8vw, 7.5rem); line-height: 0.96; }
+      .lede { margin-top: 20px; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.35; color: var(--text2); max-width: 34em; }
+
+      .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; padding: 0 30px; border-radius: 999px; background: #fff; color: #000; text-decoration: none; border: 0; font: 700 18px 'Hanken Grotesk', sans-serif; cursor: pointer; transition: background 160ms ease, transform 160ms ease; }
+      .btn:hover { background: var(--cyan); }
+      .btn:active { transform: scale(0.97); }
+      .btn:focus-visible, .link:focus-visible, a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
+      .link { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; background: none; border: 0; color: #fff; font: 600 18px 'Hanken Grotesk', sans-serif; text-decoration: underline; text-underline-offset: 6px; cursor: pointer; }
+      .link:hover { color: var(--cyan); }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; margin-top: 28px; }
+
+      footer.site { padding: 28px var(--gutter) 40px; border-top: 1px solid var(--rule); font-size: 15px; color: var(--grey); display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
+      footer.site a { color: #fff; }
+
+      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site">
+      <a class="brand" href="/" aria-label="FoleyCraft home">
+        <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+          <circle cx="9" cy="9" r="8" fill="#ff3254" />
+          <path d="M2 27a12 12 0 0 1 24 0Z" fill="#19f3ff" />
+        </svg>
+        foleycraft
+      </a>
+      <nav class="site" aria-label="Main">
+        <a href="/">Home</a>
+        <a href="/#studio">Studio</a>
+        <a href="/faq/" {% if nav == 'faq' %}aria-current="page"{% endif %}>FAQ</a>
+        <a href="/support/" {% if nav == 'support' %}aria-current="page"{% endif %}>Support</a>
+        <a href="/status/" {% if nav == 'errors' %}aria-current="page"{% endif %}>Errors</a>
+        <a href="/health/" {% if nav == 'health' %}aria-current="page"{% endif %}>Health</a>
+      </nav>
+    </header>
+
+    <main id="main">{% block content %}{% endblock %}</main>
+
+    <footer class="site">
+      <span>FoleyCraft © 2026. Runs in your browser on the Web Audio API.</span>
+      <span><a href="/faq/">FAQ</a> · <a href="/support/">Support</a> · <a href="/status/">Error codes</a> · <a href="/health/">Health</a></span>
+    </footer>
+
+    <!-- Chat widget: the same assistant as on the home page, loaded on every server-rendered page. -->
+    <div id="fc-widget"></div>
+    {% block scripts %}{% endblock %}
+    <script type="module" src="/static/assets/widget.js"></script>
+  </body>
+</html>

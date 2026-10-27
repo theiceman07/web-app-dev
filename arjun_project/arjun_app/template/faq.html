@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}FAQ{% endblock %}
+{% block description %}Answers to common questions about FoleyCraft.{% endblock %}
+
+{% block head %}
+<style>
+  .lead { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(24px, 4vw, 72px); align-items: end; }
+  .search { display: block; margin-top: clamp(28px, 4vw, 48px); }
+  .search span { display: block; font-size: 15px; color: var(--grey); margin-bottom: 8px; }
+  .search input { width: 100%; max-width: 560px; min-height: 56px; padding: 0 22px; border-radius: 999px; border: 1.5px solid rgba(255,255,255,.5); background: transparent; color: #fff; font: 500 18px 'Hanken Grotesk', sans-serif; }
+  .search input::placeholder { color: var(--grey); }
+  .group { margin-top: clamp(36px, 5vw, 64px); }
+  .group h2 { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1; margin-bottom: 8px; }
+  details { border-top: 1px solid var(--rule); }
+  details:last-child { border-bottom: 1px solid var(--rule); }
+  summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 22px 0; font-size: clamp(19px, 1.8vw, 24px); font-weight: 700; line-height: 1.25; }
+  summary::-webkit-details-marker { display: none; }
+  summary .ms { transition: transform 250ms ease; flex-shrink: 0; }
+  details[open] summary .ms { transform: rotate(180deg); }
+  details[open] summary { color: var(--cyan); }
+  .answer { padding: 0 0 26px; max-width: 46em; color: var(--text2); font-size: 18px; line-height: 1.5; }
+  .empty { margin-top: 32px; color: var(--grey); }
+  .more { margin-top: clamp(40px, 6vw, 72px); background: var(--yellow); color: #000; padding: clamp(24px, 4vw, 48px); }
+  .more h2 { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(2.2rem, 5vw, 4.5rem); line-height: 1; }
+  .more p { margin-top: 14px; font-size: 20px; font-weight: 600; max-width: 28em; }
+  .more .btn { background: #000; color: #fff; }
+  .more .btn:hover { background: #fff; color: #000; }
+  .more .link { color: #000; }
+  @media (max-width: 900px) { .lead { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div class="lead">
+    <div>
+      <p class="kicker">{{ count }} questions, answered</p>
+      <h1 class="title">FAQ</h1>
+    </div>
+    <p class="lede">Quick answers about the studio, exporting and support. Can't find yours? Ask the assistant, or open a ticket.</p>
+  </div>
+
+  <label class="search">
+    <span>Search the questions</span>
+    <input id="faq-search" type="search" placeholder="e.g. headphones, export, no sound" autocomplete="off" />
+  </label>
+  <p class="empty" id="faq-empty" hidden>No question matches that. Try different words, or ask the assistant.</p>
+
+  {% for category, items in groups.items %}
+  <section class="group" aria-labelledby="cat-{{ forloop.counter }}">
+    <h2 id="cat-{{ forloop.counter }}">{{ category }}</h2>
+    {% for f in items %}
+    <details data-text="{{ f.question|lower }} {{ f.answer|lower }} {{ f.keywords|lower }}">
+      <summary>{{ f.question }}<span class="ms" aria-hidden="true">expand_more</span></summary>
+      <p class="answer">{{ f.answer }}</p>
+    </details>
+    {% endfor %}
+  </section>
+  {% empty %}
+  <p class="empty">No FAQs are published yet.</p>
+  {% endfor %}
+
+  <section class="more">
+    <h2>Still stuck?</h2>
+    <p>The assistant answers from this FAQ. If it can't, it opens a support ticket for you.</p>
+    <div class="actions">
+      <button class="btn" type="button" data-ask="">Ask the assistant</button>
+      <a class="link" href="/support/">Open a ticket</a>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var box = document.getElementById('faq-search'), empty = document.getElementById('faq-empty');
+  box.addEventListener('input', function () {
+    var q = box.value.trim().toLowerCase().split(/\s+/).filter(Boolean), shown = 0;
+    document.querySelectorAll('details').forEach(function (d) {
+      var ok = q.every(function (w) { return d.dataset.text.indexOf(w) !== -1; });
+      d.hidden = !ok; if (ok) shown++;
+      if (q.length && ok) d.open = true;
+    });
+    document.querySelectorAll('.group').forEach(function (g) { g.hidden = !g.querySelector('details:not([hidden])'); });
+    empty.hidden = shown !== 0;
+  });
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-ask]');
+    if (b) window.dispatchEvent(new CustomEvent('foley:assistant-open', { detail: b.getAttribute('data-ask') || undefined }));
+  });
+</script>
+{% endblock %}

@@ -302,3 +302,135 @@
     display: none;
   }
 }
+
+/* Ticket card, FAQ-fallback notice and feedback buttons */
+.as-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 94%;
+}
+.as-block .as-msg {
+  max-width: 100%;
+}
+.as-notice {
+  margin: 0;
+  padding-left: 4px;
+  font-size: 13px;
+  color: #a2a2a2;
+}
+.as-notice a {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #ff8a3d;
+  color: #000;
+  font-weight: 800;
+  text-decoration: none;
+}
+.as-ticket {
+  width: 100%;
+  padding: 14px 16px;
+  background: #19f3ff;
+  color: #000;
+}
+.as-ticket p {
+  margin: 0;
+}
+.as-ticket-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+.as-ticket-ref {
+  font-family: 'Anton', Impact, sans-serif;
+  font-size: 34px;
+  line-height: 1.1;
+}
+.as-ticket-note {
+  display: block;
+  margin: 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.as-ticket-row {
+  display: flex;
+  gap: 8px;
+}
+.as-ticket-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 2px solid #000;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font: 500 15px 'Hanken Grotesk', sans-serif;
+}
+.as-ticket-row button {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  font: 700 15px 'Hanken Grotesk', sans-serif;
+  cursor: pointer;
+}
+.as-ticket-row button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.as-ticket-error {
+  margin-top: 6px !important;
+  font-size: 14px;
+  font-weight: 700;
+}
+.as-fb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #a2a2a2;
+}
+.as-fb button {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #cfcfcf;
+  cursor: pointer;
+  transition: color 150ms ease, background 150ms ease;
+}
+.as-fb button:hover {
+  color: #19f3ff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.as-fb button[aria-pressed='true'] {
+  color: #19f3ff;
+}
+
+/* Material Symbols glyph, so the widget also works on pages that do not load index.css */
+.ms {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'liga';
+  font-variation-settings: 'FILL' 0;
+  user-select: none;
+  flex-shrink: 0;
+  vertical-align: middle;
+}

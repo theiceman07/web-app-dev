@@ -1,164 +1,77 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#000000" />
-    <meta name="robots" content="noindex" />
-    <title>{{ code }} {{ title }} — FoleyCraft</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@500;600;700;800&display=swap" />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=arrow_back,arrow_forward,refresh&display=block"
-    />
-    <style>
-      :root {
-        --pink: #ff3254;
-        --cyan: #19f3ff;
-        --orange: #ff8a3d;
-        --yellow: #ffc93c;
-        --purple: #6b3df5;
-        --lime: #a5f25a;
-        --grey: #a2a2a2;
-        --rule: rgba(255, 255, 255, 0.28);
-        --gutter: clamp(16px, 3.2vw, 44px);
-      }
-      * { box-sizing: border-box; }
-      html, body { margin: 0; background: #000; color: #fff; }
-      body {
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        font-family: 'Hanken Grotesk', system-ui, sans-serif;
-        font-size: 18px;
-        line-height: 1.45;
-        -webkit-font-smoothing: antialiased;
-      }
-      a { color: inherit; }
-      .ms {
-        font-family: 'Material Symbols Outlined';
-        font-weight: normal; font-style: normal; line-height: 1; font-size: 22px;
-        display: inline-block; white-space: nowrap; vertical-align: middle;
-        font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased;
-      }
-      header {
-        height: 64px; padding: 0 var(--gutter);
-        display: flex; align-items: center; justify-content: space-between;
-      }
-      .brand {
-        display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
-        font-family: 'Anton', Impact, sans-serif; font-size: 26px; line-height: 1;
-      }
-      .top-link { font-family: 'Anton', Impact, sans-serif; font-size: 20px; text-underline-offset: 6px; text-decoration-thickness: 2px; }
-      .top-link:hover { color: var(--cyan); }
+{% extends 'base.html' %}
+{% block title %}{% if index %}Error codes{% else %}{{ code }} {{ e.title }}{% endif %}{% endblock %}
 
-      main { flex: 1; padding: 0 var(--gutter) 56px; }
-      .tone-info { --tone: var(--cyan); }
-      .tone-error { --tone: var(--pink); }
-      .tone-warn { --tone: var(--orange); }
+{% block head %}
+<meta name="robots" content="noindex" />
+<style>
+  .tone-info { --tone: var(--cyan); } .tone-error { --tone: var(--pink); } .tone-warn { --tone: var(--orange); }
+  .page { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(24px, 5vw, 80px); align-items: end; }
+  .code { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(8rem, 30vw, 28rem); line-height: 0.85; color: var(--tone); }
+  .shapes { display: flex; gap: 12px; margin-bottom: 24px; }
+  .shapes svg { width: 52px; height: 52px; }
+  h1.headline { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(2.5rem, 6vw, 5.5rem); line-height: 0.98; }
+  .message { margin-top: 18px; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.35; color: var(--text2); max-width: 26em; }
+  .help { margin-top: 20px; font-size: 16px; color: var(--grey); max-width: 30em; }
+  .help strong { color: #fff; }
+  .meta { margin-top: 24px; font-size: 15px; color: var(--grey); }
+  .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 32px; }
+  .tile { display: flex; flex-direction: column; justify-content: space-between; min-height: 230px; padding: 20px; background: var(--tone); color: #000; text-decoration: none; transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1), background 260ms ease, color 260ms ease; }
+  .tile:hover, .tile:focus-visible { transform: translateY(-8px); background: #000; color: #fff; outline: 2px solid var(--tone); outline-offset: -2px; }
+  .tile b { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(3rem, 5.4vw, 5rem); line-height: 0.95; }
+  .tile span { font-size: 16px; font-weight: 700; }
+  .tile small { display: block; font-size: 14px; font-weight: 500; margin-top: 4px; }
+  .legend { font-size: 15px; color: var(--grey); margin-top: 24px; max-width: 46em; }
+  @media (max-width: 900px) { .page { grid-template-columns: 1fr; align-items: start; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+{% endblock %}
 
-      .page {
-        border-top: 1px solid var(--rule);
-        padding-top: clamp(24px, 4vw, 56px);
-        display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-        gap: clamp(24px, 5vw, 80px); align-items: end;
-      }
-      .code {
-        font-family: 'Anton', Impact, sans-serif; font-weight: 400;
-        font-size: clamp(9rem, 32vw, 30rem); line-height: 0.85; margin: 0;
-        color: var(--tone); letter-spacing: -0.01em;
-      }
-      .shapes { display: flex; gap: 12px; margin-bottom: 28px; }
-      .shapes svg { width: 56px; height: 56px; }
-      .kicker { font-size: 15px; color: var(--grey); margin: 0 0 8px; }
-      h1 {
-        font-family: 'Anton', Impact, sans-serif; font-weight: 400;
-        font-size: clamp(2.75rem, 6vw, 5.5rem); line-height: 0.98; margin: 0;
-      }
-      .message { margin: 20px 0 0; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.35; color: #cfcfcf; max-width: 26em; }
-      .actions { display: flex; flex-wrap: wrap; gap: 12px 24px; margin-top: 32px; align-items: center; }
-      .btn {
-        display: inline-flex; align-items: center; gap: 10px; min-height: 56px; padding: 0 30px;
-        border-radius: 999px; background: #fff; color: #000; text-decoration: none; border: 0;
-        font: 700 18px 'Hanken Grotesk', sans-serif; cursor: pointer; transition: background 160ms ease, transform 160ms ease;
-      }
-      .btn:hover { background: var(--cyan); }
-      .btn:active { transform: scale(0.97); }
-      .link { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; font-weight: 600; background: none; border: 0; color: #fff; font-size: 18px; font-family: inherit; text-decoration: underline; text-underline-offset: 6px; cursor: pointer; }
-      .link:hover { color: var(--cyan); }
-      .meta { margin-top: 28px; font-size: 15px; color: var(--grey); }
-      .meta a { color: #fff; }
-
-      .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 32px; }
-      .tile {
-        display: flex; flex-direction: column; justify-content: space-between; min-height: 220px; padding: 20px;
-        background: var(--tone); color: #000; text-decoration: none;
-        transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1), background 260ms ease, color 260ms ease;
-      }
-      .tile:hover, .tile:focus-visible { transform: translateY(-8px); background: #000; color: #fff; outline: 2px solid var(--tone); outline-offset: -2px; }
-      .tile b { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(3.5rem, 6vw, 5.5rem); line-height: 0.95; }
-      .tile span { font-size: 16px; font-weight: 700; }
-      .legend { font-size: 15px; color: var(--grey); margin-top: 24px; max-width: 46em; }
-
-      @media (max-width: 900px) {
-        .page { grid-template-columns: 1fr; align-items: start; }
-        .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      }
-      @media (prefers-reduced-motion: reduce) { .tile, .btn { transition: none; } }
-    </style>
-  </head>
-  <body class="tone-{{ tone }}">
-    <header>
-      <a class="brand" href="/" aria-label="FoleyCraft home">
-        <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
-          <circle cx="9" cy="9" r="8" fill="#ff3254" />
-          <path d="M2 27a12 12 0 0 1 24 0Z" fill="#19f3ff" />
-        </svg>
-        foleycraft
+{% block content %}
+<div class="wrap tone-{% if index %}info{% else %}{{ e.tone }}{% endif %}">
+{% if index %}
+  <p class="kicker">Every response the site can send</p>
+  <h1 class="title">Error codes</h1>
+  <p class="lede">Each tile opens that page and answers with its real HTTP status code, so you can also see it in your browser's network panel. 202 is not an error: it means the request was accepted. <strong>FC-100</strong> is specific to FoleyCraft.</p>
+  <div class="grid">
+    {% for item in items %}
+      <a class="tile tone-{{ item.tone }}" href="/status/{{ item.code }}/">
+        <b>{{ item.code }}</b>
+        <span>{{ item.title }}<small>{{ item.cause }}</small></span>
       </a>
-      <a class="top-link" href="/status/">status pages</a>
-    </header>
+    {% endfor %}
+  </div>
+  <p class="legend">Pink: client errors (4xx). Orange: server errors, rate limits and the site code. Cyan: information.</p>
+  <div class="actions"><button class="btn" type="button" data-ask="What do the error codes mean?"><span class="ms" aria-hidden="true">chat_bubble</span>Ask the assistant</button></div>
+{% else %}
+  <div class="page">
+    <h2 class="code" aria-label="Error {{ code }}">{{ code }}</h2>
+    <div>
+      <div class="shapes" aria-hidden="true">
+        <svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="var(--tone)" /></svg>
+        <svg viewBox="0 0 56 56"><path d="M2 40a26 26 0 0 1 52 0Z" fill="var(--tone)" /></svg>
+        <svg viewBox="0 0 56 56"><path d="M28 2l26 50H2Z" fill="var(--tone)" /></svg>
+      </div>
+      <p class="kicker">{{ code }} · {{ e.title }}</p>
+      <h1 class="headline">{{ e.headline }}</h1>
+      <p class="message">{{ e.message }}</p>
+      <p class="help"><strong>Why it happens:</strong> {{ e.cause }}<br /><strong>What to do:</strong> {{ e.fix }}</p>
+      <div class="actions">
+        <a class="btn" href="/"><span class="ms" aria-hidden="true">arrow_back</span>Back to FoleyCraft</a>
+        <button class="btn" type="button" data-ask="{{ ask_prompt }}"><span class="ms" aria-hidden="true">chat_bubble</span>Ask the assistant</button>
+        <button class="link" type="button" onclick="location.reload()"><span class="ms" aria-hidden="true">refresh</span>Try again</button>
+      </div>
+      <p class="meta">This page was served with HTTP status {{ e.http }}. <a href="/status/">See all error codes</a>.</p>
+    </div>
+  </div>
+{% endif %}
+</div>
+{% endblock %}
 
-    <main>
-      {% if index %}
-        <div class="page" style="grid-template-columns: 1fr">
-          <div>
-            <p class="kicker">Every response the site can send</p>
-            <h1>Status pages</h1>
-            <p class="message">Each tile opens that page and answers with its real HTTP status code, so you can also see it in your browser's network panel. 202 is not an error: it means the request was accepted and is still being worked on.</p>
-          </div>
-        </div>
-        <div class="grid">
-          {% for item in items %}
-            <a class="tile tone-{{ item.tone }}" href="/status/{{ item.code }}/">
-              <b>{{ item.code }}</b>
-              <span>{{ item.title }}</span>
-            </a>
-          {% endfor %}
-        </div>
-        <p class="legend">Pink: client errors (4xx). Orange: server errors (5xx) and rate limits. Cyan: information.</p>
-      {% else %}
-        <div class="page">
-          <h2 class="code" aria-label="Error {{ code }}" style="margin:0">{{ code }}</h2>
-          <div>
-            <div class="shapes" aria-hidden="true">
-              <svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="var(--tone)" /></svg>
-              <svg viewBox="0 0 56 56"><path d="M2 40a26 26 0 0 1 52 0Z" fill="var(--tone)" /></svg>
-              <svg viewBox="0 0 56 56"><path d="M28 2l26 50H2Z" fill="var(--tone)" /></svg>
-            </div>
-            <p class="kicker">{{ code }} · {{ title }}</p>
-            <h1>{{ headline }}</h1>
-            <p class="message">{{ message }}</p>
-            <div class="actions">
-              <a class="btn" href="/"><span class="ms" aria-hidden="true">arrow_back</span>Back to FoleyCraft</a>
-              <button class="link" type="button" onclick="location.reload()"><span class="ms" aria-hidden="true">refresh</span>Try again</button>
-            </div>
-            <p class="meta">This page was served with HTTP status {{ code }}. <a href="/status/">See all status pages</a>.</p>
-          </div>
-        </div>
-      {% endif %}
-    </main>
-  </body>
-</html>
+{% block scripts %}
+<script>
+  // "Ask the assistant" buttons open the chat widget with a ready-made question.
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-ask]');
+    if (b) window.dispatchEvent(new CustomEvent('foley:assistant-open', { detail: b.getAttribute('data-ask') }));
+  });
+</script>
+{% endblock %}

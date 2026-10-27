@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Health{% endblock %}
+{% block description %}Live status of the FoleyCraft services.{% endblock %}
+
+{% block head %}
+<meta name="robots" content="noindex" />
+<style>
+  .overall { display: inline-flex; align-items: center; gap: 14px; margin-top: 24px; padding: 12px 24px; border-radius: 999px; font-weight: 800; font-size: 22px; color: #000; }
+  .overall.ok { background: var(--lime); } .overall.degraded { background: var(--yellow); } .overall.down { background: var(--pink); }
+  .overall i { width: 14px; height: 14px; border-radius: 50%; background: #000; }
+  .checks { margin-top: clamp(28px, 4vw, 48px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .check { padding: 20px; border: 1.5px solid var(--rule); min-height: 170px; display: flex; flex-direction: column; gap: 8px; }
+  .check h2 { font-size: 16px; font-weight: 600; color: var(--grey); }
+  .pill { align-self: flex-start; padding: 4px 14px; border-radius: 999px; font-weight: 800; font-size: 16px; color: #000; }
+  .pill.ok { background: var(--lime); } .pill.degraded, .pill.not_configured { background: var(--yellow); } .pill.down { background: var(--pink); }
+  .check p { font-size: 15px; color: var(--text2); line-height: 1.35; }
+  .facts { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px 36px; font-size: 16px; color: var(--grey); }
+  .facts b { color: #fff; font-weight: 700; }
+  h2.sub { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(2rem, 4vw, 3.2rem); margin: clamp(36px, 5vw, 64px) 0 16px; line-height: 1; }
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 560px; }
+  th, td { text-align: left; padding: 10px 14px 10px 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+  th { color: var(--grey); font-weight: 600; }
+  td.s2 { color: var(--lime); } td.s4 { color: var(--yellow); } td.s5 { color: var(--pink); }
+  @media (max-width: 1000px) { .checks { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .checks { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <p class="kicker">Checked just now · {{ h.time }}</p>
+  <h1 class="title">Health</h1>
+  <p class="overall {{ h.status }}" role="status"><i aria-hidden="true"></i>{% if h.status == 'ok' %}All systems working{% elif h.status == 'degraded' %}Working, with a warning{% else %}A required service is down{% endif %}</p>
+
+  <div class="checks">
+    {% for name, c in checks %}
+    <section class="check" aria-label="{{ name }}">
+      <h2>{% if name == 'sql_database' %}SQL database{% elif name == 'mongodb' %}MongoDB{% elif name == 'ai_service' %}AI service{% else %}Weather API{% endif %}</h2>
+      <span class="pill {{ c.status }}">{% if c.status == 'not_configured' %}not configured{% else %}{{ c.status }}{% endif %}</span>
+      <p>{{ c.detail }}{% if c.ms %} · {{ c.ms }} ms{% endif %}</p>
+    </section>
+    {% endfor %}
+  </div>
+
+  <p class="facts">
+    <span>Version <b>{{ h.version }}</b></span>
+    <span>Region <b>{{ h.region }}</b></span>
+    <span>Uptime <b>{{ h.uptime_s }} s</b></span>
+    {% if h.counts %}<span>FAQs <b>{{ h.counts.faqs }}</b></span><span>Tickets <b>{{ h.counts.tickets }}</b></span>{% endif %}
+    <span><a href="/api/health/">JSON</a> · <a href="/health/?deep=1">Run live weather check</a></span>
+  </p>
+
+  <h2 class="sub">Recent requests</h2>
+  <p class="kicker">Newest first, from this server instance. Every request is also logged as one JSON line.</p>
+  <div class="tablewrap" tabindex="0">
+    <table>
+      <thead><tr><th>Time (UTC)</th><th>Method</th><th>Path</th><th>Status</th><th>ms</th><th>Request id</th></tr></thead>
+      <tbody>
+        {% for r in h.recent_requests %}
+        <tr><td>{{ r.time }}</td><td>{{ r.method }}</td><td>{{ r.path }}</td><td class="s{{ r.status|slice:':1' }}">{{ r.status }}</td><td>{{ r.ms }}</td><td>{{ r.id }}</td></tr>
+        {% empty %}
+        <tr><td colspan="6">No requests yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

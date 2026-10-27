@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% block title %}Support{% endblock %}
+{% block description %}Contact FoleyCraft support and check the status of a ticket.{% endblock %}
+
+{% block head %}
+<style>
+  .cols { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(28px, 5vw, 80px); align-items: start; margin-top: clamp(28px, 4vw, 56px); }
+  .panel h2 { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1; margin-bottom: 20px; }
+  .field { display: block; margin-bottom: 20px; }
+  .field > span { display: block; font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .field input, .field textarea { width: 100%; padding: 14px 18px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,.5); background: transparent; color: #fff; font: 500 18px 'Hanken Grotesk', sans-serif; }
+  .field textarea { min-height: 160px; resize: vertical; }
+  .field input[aria-invalid='true'], .field textarea[aria-invalid='true'] { border-color: var(--pink); }
+  .err { display: block; margin-top: 6px; color: var(--pink); font-size: 15px; font-weight: 600; }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .done { background: var(--lime); color: #000; padding: clamp(20px, 3vw, 32px); margin-top: 28px; }
+  .done h2 { color: #000; font-size: clamp(1.8rem, 3.4vw, 3rem); margin-bottom: 8px; }
+  .done .ref { font-family: 'Anton', Impact, sans-serif; font-size: clamp(2.4rem, 6vw, 4.5rem); line-height: 1; margin: 8px 0; }
+  .done p { font-size: 18px; font-weight: 600; max-width: 30em; }
+  .lookup-result { margin-top: 18px; padding: 16px 20px; font-size: 17px; font-weight: 600; min-height: 56px; }
+  .lookup-result.ok { background: var(--cyan); color: #000; }
+  .lookup-result.bad { background: var(--pink); color: #000; }
+  .lookup-result b { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: 28px; margin-right: 10px; }
+  .hint { color: var(--grey); font-size: 15px; margin-top: 10px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <p class="kicker">We reply by email</p>
+  <h1 class="title">Support</h1>
+  <p class="lede">Send us a ticket and we will follow up. The assistant can also open one for you when it can't answer a question.</p>
+
+  {% if created %}
+  <section class="done" role="status" aria-live="polite">
+    <h2>Ticket received</h2>
+    <p class="ref">{{ created }}</p>
+    <p>Keep this reference. Use it with your email below to check the status at any time.</p>
+  </section>
+  {% endif %}
+
+  <div class="cols">
+    <section class="panel" aria-labelledby="new-ticket">
+      <h2 id="new-ticket">New ticket</h2>
+      <form method="post" action="/support/" novalidate>
+        {% csrf_token %}
+        <div class="hp" aria-hidden="true"><label>Leave this empty<input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+        <label class="field"><span>Your name</span>
+          <input name="name" value="{{ form.name }}" required maxlength="120" autocomplete="name" {% if errors.name %}aria-invalid="true" aria-describedby="e-name"{% endif %} />
+          {% if errors.name %}<span class="err" id="e-name">{{ errors.name }}</span>{% endif %}</label>
+        <label class="field"><span>Email</span>
+          <input name="email" type="email" value="{{ form.email }}" required autocomplete="email" {% if errors.email %}aria-invalid="true" aria-describedby="e-email"{% endif %} />
+          {% if errors.email %}<span class="err" id="e-email">{{ errors.email }}</span>{% endif %}</label>
+        <label class="field"><span>Subject</span>
+          <input name="subject" value="{{ form.subject }}" required maxlength="200" {% if errors.subject %}aria-invalid="true" aria-describedby="e-subject"{% endif %} />
+          {% if errors.subject %}<span class="err" id="e-subject">{{ errors.subject }}</span>{% endif %}</label>
+        <label class="field"><span>What happened?</span>
+          <textarea name="message" required maxlength="4000" {% if errors.message %}aria-invalid="true" aria-describedby="e-message"{% endif %}>{{ form.message }}</textarea>
+          {% if errors.message %}<span class="err" id="e-message">{{ errors.message }}</span>{% endif %}</label>
+        <button class="btn" type="submit">Send ticket <span class="ms" aria-hidden="true">arrow_forward</span></button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="check-ticket">
+      <h2 id="check-ticket">Check a ticket</h2>
+      <form id="lookup" novalidate>
+        <label class="field"><span>Ticket reference</span><input id="l-ref" placeholder="FC-ABC123" autocomplete="off" required /></label>
+        <label class="field"><span>Email used for the ticket</span><input id="l-email" type="email" autocomplete="email" /></label>
+        <button class="btn" type="submit">Check status</button>
+      </form>
+      <div class="lookup-result" id="l-out" role="status" aria-live="polite" hidden></div>
+      <p class="hint">Not sure of the reference? <button class="link" type="button" data-ask="I need help finding my ticket">Ask the assistant</button></p>
+    </section>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var form = document.getElementById('lookup'), out = document.getElementById('l-out');
+  var params = new URLSearchParams(location.search);
+  if (params.get('ref')) document.getElementById('l-ref').value = params.get('ref');
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var ref = document.getElementById('l-ref').value.trim().toUpperCase();
+    var email = document.getElementById('l-email').value.trim();
+    out.hidden = false; out.className = 'lookup-result'; out.textContent = 'Checking…';
+    if (!ref) { out.className = 'lookup-result bad'; out.textContent = 'Enter a ticket reference.'; return; }
+    fetch('/api/tickets/' + encodeURIComponent(ref) + '/', { headers: email ? { 'X-Ticket-Email': email } : {} })
+      .then(function (r) { return r.json().then(function (d) { return { r: r, d: d }; }); })
+      .then(function (x) {
+        if (x.r.ok) {
+          out.className = 'lookup-result ok';
+          out.textContent = x.d.reference + ' is ' + x.d.status + '. Subject: ' + x.d.subject;
+        } else {
+          out.className = 'lookup-result bad';
+          out.innerHTML = '<b></b><span></span>';
+          out.firstChild.textContent = x.r.status;
+          out.lastChild.textContent = (x.d.error && x.d.error.message) || 'Something went wrong.';
+        }
+      })
+      .catch(function () { out.className = 'lookup-result bad'; out.textContent = 'Could not reach the server. Try again.'; });
+  });
+  document.addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-ask]');
+    if (b) window.dispatchEvent(new CustomEvent('foley:assistant-open', { detail: b.getAttribute('data-ask') || undefined }));
+  });
+</script>
+{% endblock %}

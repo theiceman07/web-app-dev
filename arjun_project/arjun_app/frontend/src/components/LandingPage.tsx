@@ -126,6 +126,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio }) => {
   const [takeSeed, setTakeSeed] = useState<number>(7);
   const [roomId, setRoomId] = useState<string>('large');
   const [dist, setDist] = useState<number>(4);
+  const [wx, setWx] = useState<{ scene: string; reason: string; source: string; fallback: boolean } | null>(null);
+  const [wxBusy, setWxBusy] = useState<boolean>(false);
 
   const { scrollTo } = useLenis(rootRef, innerRef, (progress, v) => {
     rootRef.current?.style.setProperty('--p', progress.toFixed(4));
@@ -192,6 +194,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio }) => {
     window.addEventListener('foley:hear-preset', onHear);
     return () => window.removeEventListener('foley:hear-preset', onHear);
   }, []);
+
+  // Asks the server for a scene that matches the weather. The server calls Open-Meteo with a
+  // 3 second limit and answers with a fallback scene if the weather service is slow or down.
+  const suggestScene = async () => {
+    setWxBusy(true);
+    const coords = await new Promise<{ lat: number; lon: number } | null>((resolve) => {
+      if (!navigator.geolocation) return resolve(null);
+      navigator.geolocation.getCurrentPosition(
+        (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
+        () => resolve(null),
+        { timeout: 4000, maximumAge: 600000 }
+      );
+    });
+    try {
+      const res = await fetch(`/api/weather-scene/${coords ? `?lat=${coords.lat}&lon=${coords.lon}` : ''}`);
+      setWx(await res.json());
+    } catch {
+      setWx({ scene: 'cozy_tavern', reason: 'Could not reach the server, so here is a cosy default.', source: 'fallback', fallback: true });
+    } finally {
+      setWxBusy(false);
+    }
+  };
 
   const goTo = (e: React.MouseEvent, target: string | number) => {
     e.preventDefault();
@@ -294,9 +318,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio }) => {
             <i><b /></i>
             <span>studio</span>
           </div>
-          <button className="lp-top-link" onClick={() => onLaunchStudio()}>
-            open the studio
-          </button>
+          <div className="lp-top-right">
+            <a className="lp-top-link lp-top-extra" href="/faq/">faq</a>
+            <a className="lp-top-link lp-top-extra" href="/support/">support</a>
+            <button className="lp-top-link" onClick={() => onLaunchStudio()}>
+              open the studio
+            </button>
+          </div>
         </header>
 
         <main id="top">
@@ -559,6 +587,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio }) => {
             ))}
           </section>
 
+          <section className="lp-weather" aria-labelledby="weather-title">
+            <div>
+              <SplitReveal as="h2" id="weather-title" className="lp-h2" text="Scene for the weather." />
+              <Reveal delay={0.1}>
+                <p className="lp-lede">
+                  Not sure what to play? We check the weather where you are and pick a matching scene. Your location is only
+                  sent to the weather service and is not stored.
+                </p>
+                <div className="lp-hero-actions">
+                  <button className="lp-btn" onClick={suggestScene} disabled={wxBusy}>
+                    {wxBusy ? 'Checking the sky…' : 'Suggest a scene'}
+                    <Icons.ArrowRight size={20} />
+                  </button>
+                </div>
+              </Reveal>
+            </div>
+            <div className="lp-weather-card" aria-live="polite">
+              {wx ? (
+                <>
+                  <p className="lp-panel-kicker">{wx.fallback ? 'Fallback scene' : 'Live from Open-Meteo'}</p>
+                  <h3 className="lp-panel-name">{INITIAL_PRESETS.find((p) => p.id === wx.scene)?.name ?? wx.scene}</h3>
+                  <p className="lp-panel-meta">{wx.reason}</p>
+                  {wx.fallback && (
+                    <p className="lp-panel-tip">The weather service took longer than 3 seconds or was unavailable, so we used a default.</p>
+                  )}
+                  <button className="lp-small-btn" onClick={() => hearPreset(wx.scene)}>
+                    <Icons.Play size={18} fill="currentColor" />
+                    Hear it
+                  </button>
+                </>
+              ) : (
+                <p className="lp-panel-tip">Press the button to get a suggestion.</p>
+              )}
+            </div>
+          </section>
+
           <section className="lp-section" id="presets" aria-labelledby="presets-title">
             <div className="lp-head">
               <SplitReveal as="h2" id="presets-title" className="lp-h2" text={`${INITIAL_PRESETS.length} places to stand.`} />
@@ -648,7 +712,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio }) => {
             <a href="#features" onClick={(e) => goTo(e, '#features')}>How it works</a>
             <a href="#presets" onClick={(e) => goTo(e, '#presets')}>Scenes</a>
             <a href="#library" onClick={(e) => goTo(e, '#library')}>Catalog</a>
-            <a href="/status/">Status pages</a>
+            <a href="/faq/">FAQ</a>
+            <a href="/support/">Support</a>
+            <a href="/status/">Error codes</a>
+            <a href="/health/">Health</a>
             <button onClick={() => onLaunchStudio()}>Open the studio</button>
           </nav>
           <p className="lp-footer-meta">FoleyCraft © 2026. Runs in your browser on the Web Audio API.</p>

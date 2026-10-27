@@ -99,6 +99,8 @@ export const Info = make('info', 'Info');
 export const AlertTriangle = make('warning', 'AlertTriangle');
 export const AlertCircle = make('error', 'AlertCircle');
 export const MessageCircle = make('chat_bubble', 'MessageCircle');
+export const ThumbsUp = make('thumb_up', 'ThumbsUp');
+export const ThumbsDown = make('thumb_down', 'ThumbsDown');
 
 // Sound-category glyphs, looked up by name from the catalog (iconName).
 export const Bug = make('bug_report', 'Bug');

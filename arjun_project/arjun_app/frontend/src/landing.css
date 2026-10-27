@@ -913,3 +913,71 @@
     font-size: 22vw;
   }
 }
+
+/* Weather scene (third-party API with fallback) and extra top links */
+.lp-top-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2.4vw, 32px);
+}
+.landing a.lp-top-link {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 0.02em;
+  transition: color 150ms ease;
+}
+.landing a.lp-top-link:hover {
+  color: var(--cyan);
+}
+.lp-weather {
+  margin: clamp(80px, 11vw, 170px) var(--gutter) 0;
+  border-top: 1px solid var(--rule);
+  padding-top: clamp(32px, 4vw, 56px);
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(24px, 5vw, 80px);
+  align-items: center;
+}
+.lp-weather .lp-lede {
+  margin-top: 24px;
+}
+.lp-weather-card {
+  background: var(--cyan);
+  color: var(--black);
+  padding: clamp(20px, 3vw, 36px);
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+.lp-weather-card .lp-panel-kicker,
+.lp-weather-card .lp-panel-meta,
+.lp-weather-card .lp-panel-tip {
+  color: var(--black);
+}
+.lp-weather-card .lp-small-btn {
+  align-self: flex-start;
+  margin-top: 12px;
+  border-color: var(--black);
+  color: var(--black);
+}
+.lp-weather-card .lp-small-btn:hover {
+  background: var(--black);
+  color: var(--cyan);
+}
+.lp-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+@media (max-width: 900px) {
+  .lp-weather {
+    grid-template-columns: 1fr;
+  }
+  .lp-top-extra {
+    display: none;
+  }
+}

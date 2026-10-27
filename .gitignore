@@ -11,6 +11,7 @@ db.sqlite3
 # Frontend
 node_modules/
 arjun_project/arjun_app/frontend/dist/
+arjun_project/arjun_app/frontend/dist-widget/
 
 # Tool caches
 .impeccable/

@@ -34,8 +34,11 @@ export default defineConfig({
             const publicStatic = path.resolve(import.meta.dirname, '../../../public/static')
             for (const root of [staticsDir, publicStatic]) {
               const destAssets = path.join(root, 'assets')
-              fs.rmSync(destAssets, { recursive: true, force: true })
               fs.mkdirSync(destAssets, { recursive: true })
+              // Remove only old hashed app bundles; widget.js/widget.css come from the widget build.
+              for (const old of fs.readdirSync(destAssets)) {
+                if (/^index-.*\.(js|css)$/.test(old)) fs.rmSync(path.join(destAssets, old))
+              }
               fs.cpSync(assetsSrc, destAssets, { recursive: true })
             }
             console.log('✓ Copied assets to arjun_app/statics/assets and public/static/assets')
