@@ -9,7 +9,7 @@ import urllib.request
 from django.conf import settings
 from django.core.cache import cache
 
-from .errors import ERROR_CODES, get_error
+from .errors import all_errors, get_error
 from .models import FAQ
 
 log = logging.getLogger('foleycraft.services')
@@ -64,11 +64,12 @@ _CODE_RE = re.compile(r'\b(?:FC[- ]?\d{3}|[1-5]\d{2})\b', re.I)
 
 def find_error_code(text):
     """Return the first known error code mentioned in `text`, or None."""
+    known = all_errors()
     for m in _CODE_RE.finditer(text or ''):
         raw = m.group(0).upper().replace(' ', '-')
         if raw.startswith('FC') and '-' not in raw:
             raw = 'FC-' + raw[2:]
-        if raw in ERROR_CODES:
+        if raw in known:
             return raw
     return None
 

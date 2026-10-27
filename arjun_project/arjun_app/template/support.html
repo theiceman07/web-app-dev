@@ -70,6 +70,18 @@
         <button class="btn" type="submit">Check status</button>
       </form>
       <div class="lookup-result" id="l-out" role="status" aria-live="polite" hidden></div>
+
+      <!-- Manage a ticket you found: update (PATCH) or delete (DELETE). -->
+      <form id="manage" hidden novalidate>
+        <h3 id="m-title">Your ticket</h3>
+        <label class="field"><span>Subject</span><input id="m-subject" maxlength="200" required /></label>
+        <label class="field"><span>Message</span><textarea id="m-message" maxlength="4000" required></textarea></label>
+        <div class="actions" style="margin-top:0">
+          <button class="btn" type="submit">Save changes</button>
+          <button class="link" type="button" id="m-resolve">Mark resolved</button>
+          <button class="link" type="button" id="m-delete">Delete ticket</button>
+        </div>
+      </form>
       <p class="hint">Not sure of the reference? <button class="link" type="button" data-ask="I need help finding my ticket">Ask the assistant</button></p>
     </section>
   </div>
@@ -79,6 +91,42 @@
 {% block scripts %}
 <script>
   var form = document.getElementById('lookup'), out = document.getElementById('l-out');
+  var manage = document.getElementById('manage'), current = null; // current = { reference, email }
+
+  function csrf() { var m = document.cookie.match(/(?:^|; )csrftoken=([^;]*)/); return m ? decodeURIComponent(m[1]) : ''; }
+  function say(ok, text) { out.hidden = false; out.className = 'lookup-result ' + (ok ? 'ok' : 'bad'); out.textContent = text; }
+  function showTicket(t, email) {
+    current = { reference: t.reference, email: email };
+    say(true, t.reference + ' is ' + t.status + '.');
+    document.getElementById('m-title').textContent = 'Ticket ' + t.reference;
+    document.getElementById('m-subject').value = t.subject;
+    document.getElementById('m-message').value = t.message;
+    document.getElementById('m-resolve').textContent = t.status === 'resolved' ? 'Reopen' : 'Mark resolved';
+    document.getElementById('m-resolve').dataset.next = t.status === 'resolved' ? 'open' : 'resolved';
+    manage.hidden = false;
+  }
+  // Send an update (PATCH) or a delete (DELETE) for the ticket on screen.
+  function send(method, body, done) {
+    fetch('/api/tickets/' + encodeURIComponent(current.reference) + '/', {
+      method: method,
+      headers: { 'X-Ticket-Email': current.email, 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (r) { return r.json().then(function (d) { return { r: r, d: d }; }); })
+      .then(function (x) { if (x.r.ok) done(x.d); else say(false, x.r.status + ': ' + ((x.d.error && x.d.error.message) || 'Something went wrong.')); })
+      .catch(function () { say(false, 'Could not reach the server. Try again.'); });
+  }
+  manage.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    send('PATCH', { subject: document.getElementById('m-subject').value, message: document.getElementById('m-message').value },
+         function (t) { showTicket(t, current.email); say(true, 'Saved. ' + t.reference + ' is ' + t.status + '.'); });
+  });
+  document.getElementById('m-resolve').addEventListener('click', function (ev) {
+    send('PATCH', { status: ev.currentTarget.dataset.next }, function (t) { showTicket(t, current.email); });
+  });
+  document.getElementById('m-delete').addEventListener('click', function () {
+    if (!confirm('Delete ticket ' + current.reference + '? This cannot be undone.')) return;
+    send('DELETE', null, function (d) { say(true, 'Ticket ' + d.reference + ' was deleted.'); manage.hidden = true; current = null; });
+  });
   var params = new URLSearchParams(location.search);
   if (params.get('ref')) document.getElementById('l-ref').value = params.get('ref');
   form.addEventListener('submit', function (ev) {
@@ -91,9 +139,9 @@
       .then(function (r) { return r.json().then(function (d) { return { r: r, d: d }; }); })
       .then(function (x) {
         if (x.r.ok) {
-          out.className = 'lookup-result ok';
-          out.textContent = x.d.reference + ' is ' + x.d.status + '. Subject: ' + x.d.subject;
+          showTicket(x.d, email);
         } else {
+          manage.hidden = true; current = null;
           out.className = 'lookup-result bad';
           out.innerHTML = '<b></b><span></span>';
           out.firstChild.textContent = x.r.status;

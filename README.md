@@ -25,11 +25,11 @@ The chat assistant is on every page, including the 404 and 500 pages.
 | Requirement | Where |
 | --- | --- |
 | Responsive site, 3+ pages, chat widget on every page | The pages above. Server-rendered pages share `template/base.html`, which loads the widget (`/static/assets/widget.js`); the home page and studio use the same component in the main bundle |
-| 10+ FAQs in SQL, shown on the FAQ page | `FAQ` model; 13 rows seeded by migration `0002_seed_faqs`; rendered by `views.faq` |
-| 8+ error codes incl. one site-specific | `arjun_app/errors.py`: 400, 401, 403, 404, 405, 408, 410, 413, 429, 500, 502, 503, 504, 202 and the site code **FC-100** (AI unavailable, answered from the FAQ) |
+| 10+ FAQs in SQL, FAQ page from an API | `FAQ` model; 13 rows seeded by migration `0002_seed_faqs`. The FAQ page fetches them from the JSON API `GET /api/faqs/` (the server-rendered list is only a no-JavaScript fallback) |
+| 8+ error codes stored in SQL, incl. one site-specific | `ErrorCode` model; 15 rows seeded by migration `0004_seed_error_codes`: 400, 401, 403, 404, 405, 408, 410, 413, 429, 500, 502, 503, 504, 202 and the site code **FC-100** (AI unavailable, answered from the FAQ). The status pages, the error-codes page and the assistant all read them from SQL; `errors.py` keeps a built-in copy used only if the database cannot be reached, so error pages always render |
 | Custom 404 and 500 pages with "Ask the assistant" | `template/status.html`, wired as `handler404` / `handler500` and a catch-all route; the button opens the chat widget with a ready-made question |
 | Assistant answers from FAQ data, explains error codes, opens a ticket when it cannot answer | `views.assistant`. Error-code questions are answered from the catalogue. Other questions go to Gemini with the FAQ and error table in its prompt. If Gemini replies `NO_ANSWER`, or is slow or down and the FAQ search finds nothing, a ticket is created |
-| Tickets in SQL | `Ticket` model (PostgreSQL via `DATABASE_URL`; SQLite locally). Created from the Support form or by the assistant |
+| Tickets in SQL with full CRUD | `Ticket` model (PostgreSQL via `DATABASE_URL`; SQLite locally). **Create:** the Support form or the assistant. **Read / Update / Delete:** `GET`, `PATCH`, `DELETE /api/tickets/<reference>/`, used by the "Check a ticket" panel on the Support page. The owner proves it is theirs with the ticket's email (`X-Ticket-Email`): 401 without it, 403 if wrong, 404 if the ticket does not exist |
 | Chat logs and feedback in MongoDB | `arjun_app/mongo.py`: collections `chat_logs` and `feedback` (`/api/feedback/` returns 202 when saved) |
 | API keys in environment variables, none in the repo | All secrets are read from the environment (`.env` is git-ignored; `.env.example` lists the names). A test scans the code for hard-coded keys |
 | Request logging | `middleware.RequestLogMiddleware`: one JSON line per request (method, path, status, ms, request id, hashed client) on stdout, visible in Vercel Logs and on the Health page |
@@ -59,7 +59,7 @@ pip install -r requirements.txt
 cd arjun_project
 cp .env.example .env        # fill in GOOGLE_API_KEY at least
 python manage.py runserver  # http://127.0.0.1:8000/
-python manage.py test       # 50 tests
+python manage.py test       # 64 tests
 ```
 
 The built frontend is committed, so Node is only needed to change the UI:

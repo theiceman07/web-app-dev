@@ -104,13 +104,44 @@ ERROR_CODES = {
 REQUIRED_CODES = ['400', '401', '403', '404', '429', '500', '503', 'FC-100']
 
 
+def _row_to_dict(row):
+    return dict(
+        http=row.http_status, title=row.title, tone=row.tone, headline=row.headline,
+        message=row.message, cause=row.cause, fix=row.fix, site_specific=row.is_site_specific,
+    )
+
+
+def all_errors():
+    """Every error code, as {code: details}. Read from the SQL database; if the database
+    cannot be reached (for example while it is the thing that is broken) the built-in
+    table above is used, so error pages always render."""
+    try:
+        from .models import ErrorCode
+
+        rows = list(ErrorCode.objects.all())
+        if rows:
+            return {r.code: _row_to_dict(r) for r in rows}
+    except Exception:  # any database problem: fall back
+        pass
+    return dict(ERROR_CODES)
+
+
 def get_error(code):
-    return ERROR_CODES.get(str(code).upper())
+    code = str(code).upper()
+    try:
+        from .models import ErrorCode
+
+        row = ErrorCode.objects.filter(code=code).first()
+        if row:
+            return _row_to_dict(row)
+    except Exception:
+        pass
+    return ERROR_CODES.get(code)
 
 
 def error_table_text():
     """The catalogue as plain text, for the assistant's prompt."""
     lines = []
-    for code, e in ERROR_CODES.items():
+    for code, e in all_errors().items():
         lines.append(f"{code} {e['title']}: {e['message']} Cause: {e['cause']} Fix: {e['fix']}")
     return '\n'.join(lines)

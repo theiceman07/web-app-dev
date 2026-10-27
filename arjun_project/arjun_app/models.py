@@ -23,6 +23,33 @@ class FAQ(models.Model):
         return self.question
 
 
+class ErrorCode(models.Model):
+    """An error code the site can show: HTTP codes plus site-specific ones (FC-100).
+    Read by the status pages, the error-codes page and the assistant."""
+
+    class Tone(models.TextChoices):
+        ERROR = 'error', 'Client error'
+        WARN = 'warn', 'Server error or limit'
+        INFO = 'info', 'Information'
+
+    code = models.CharField(max_length=16, unique=True)
+    http_status = models.PositiveSmallIntegerField(help_text='The HTTP status the page is served with.')
+    title = models.CharField(max_length=80)
+    headline = models.CharField(max_length=120)
+    message = models.TextField()
+    cause = models.TextField()
+    fix = models.TextField()
+    tone = models.CharField(max_length=8, choices=Tone.choices, default=Tone.ERROR)
+    is_site_specific = models.BooleanField(default=False)
+    position = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['position', 'id']
+
+    def __str__(self):
+        return f'{self.code} {self.title}'
+
+
 def _new_reference():
     alphabet = string.ascii_uppercase.replace('O', '').replace('I', '') + string.digits.replace('0', '').replace('1', '')
     return 'FC-' + ''.join(secrets.choice(alphabet) for _ in range(6))

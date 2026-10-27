@@ -143,7 +143,8 @@ def _database():
         if parsed.scheme not in ('postgres', 'postgresql'):
             raise ImproperlyConfigured('DATABASE_URL must start with postgres:// or postgresql://')
         query = parse_qs(parsed.query)
-        options = {'sslmode': query.get('sslmode', ['require'])[0]}
+        # connect_timeout keeps error pages fast even when the database is the problem.
+        options = {'sslmode': query.get('sslmode', ['require'])[0], 'connect_timeout': 5}
         return {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': parsed.path.lstrip('/'),

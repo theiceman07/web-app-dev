@@ -18,9 +18,9 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from . import mongo, services
-from .errors import ERROR_CODES, error_table_text, get_error
+from .errors import all_errors, error_table_text, get_error
 from .middleware import RECENT
-from .models import FAQ, Ticket
+from .models import FAQ, ErrorCode, Ticket
 
 log = logging.getLogger('foleycraft.views')
 STARTED_AT = time.time()
@@ -62,7 +62,7 @@ def status_page(request, code):
 
 
 def status_index(request):
-    items = [{'code': c, **e} for c, e in ERROR_CODES.items()]
+    items = [{'code': c, **e} for c, e in all_errors().items()]
     return render(request, 'status.html', {'index': True, 'items': items, 'nav': 'errors'})
 
 
@@ -105,6 +105,23 @@ def faq(request):
     for f in faqs:
         groups.setdefault(f.category, []).append(f)
     return render(request, 'faq.html', {'groups': groups, 'count': len(faqs), 'nav': 'faq'})
+
+
+@require_GET
+def faq_api(request):
+    """The FAQ list as JSON. The FAQ page loads its questions from here."""
+    try:
+        rows = FAQ.objects.filter(is_published=True)
+        category = request.GET.get('category')
+        if category:
+            rows = rows.filter(category__iexact=category)
+        faqs = [
+            {'id': f.id, 'question': f.question, 'answer': f.answer, 'category': f.category, 'keywords': f.keywords}
+            for f in rows
+        ]
+    except DatabaseError:
+        return _error(503, 'database_unavailable', 'The FAQ database is unavailable right now. Try again shortly.')
+    return JsonResponse({'count': len(faqs), 'faqs': faqs})
 
 
 def _validate_ticket_form(data):
@@ -390,9 +407,23 @@ def assistant(request):
 # Tickets and feedback APIs
 # ---------------------------------------------------------------------------
 
-@require_GET
-def ticket_lookup(request, reference):
-    """Look up a ticket's status. 401 without an email, 404 if unknown, 403 if the email does not match."""
+def _ticket_json(ticket):
+    return {
+        'reference': ticket.reference,
+        'subject': ticket.subject,
+        'message': ticket.message,
+        'status': ticket.status,
+        'source': ticket.source,
+        'created_at': ticket.created_at.isoformat(),
+        'updated_at': ticket.updated_at.isoformat(),
+    }
+
+
+@require_http_methods(['GET', 'PATCH', 'DELETE'])
+def ticket_detail(request, reference):
+    """Read (GET), update (PATCH) or delete (DELETE) one ticket. The owner proves it is theirs
+    with the ticket's email in the X-Ticket-Email header: 401 if missing, 404 if the ticket does
+    not exist, 403 if the email does not match."""
     email = request.headers.get('X-Ticket-Email', '').strip().lower()
     if not email:
         return _error(401, 'email_required', 'Send the email address used for the ticket in the X-Ticket-Email header.')
@@ -404,13 +435,46 @@ def ticket_lookup(request, reference):
         return _error(503, 'database_unavailable', 'The database is unavailable right now. Try again shortly.')
     if not ticket.email or not hmac.compare_digest(ticket.email.lower(), email):
         return _error(403, 'email_mismatch', 'That email address does not match this ticket.')
-    return JsonResponse({
-        'reference': ticket.reference,
-        'subject': ticket.subject,
-        'status': ticket.status,
-        'source': ticket.source,
-        'created_at': ticket.created_at.isoformat(),
-    })
+
+    try:
+        if request.method == 'GET':
+            return JsonResponse(_ticket_json(ticket))
+
+        if request.method == 'DELETE':
+            ticket.delete()
+            return JsonResponse({'reference': reference.upper(), 'status': 'deleted'})
+
+        # PATCH: change the subject, the message, or the status (open / resolved).
+        try:
+            payload = json.loads(request.body.decode('utf-8'))
+            if not isinstance(payload, dict) or not payload:
+                raise ValueError('empty')
+        except (ValueError, UnicodeDecodeError):
+            return _error(400, 'bad_request', 'Send a JSON object with subject, message or status.')
+        fields = []
+        if 'subject' in payload:
+            subject = str(payload['subject']).strip()
+            if not subject or len(subject) > 200:
+                return _error(400, 'bad_request', 'The subject must be 1 to 200 characters.')
+            ticket.subject = subject
+            fields.append('subject')
+        if 'message' in payload:
+            message = str(payload['message']).strip()
+            if len(message) < 10 or len(message) > 4000:
+                return _error(400, 'bad_request', 'The message must be 10 to 4000 characters.')
+            ticket.message = message
+            fields.append('message')
+        if 'status' in payload:
+            if payload['status'] not in ('open', 'resolved'):
+                return _error(400, 'bad_request', 'The status must be "open" or "resolved".')
+            ticket.status = payload['status']
+            fields.append('status')
+        if not fields:
+            return _error(400, 'bad_request', 'Send a JSON object with subject, message or status.')
+        ticket.save(update_fields=fields + ['updated_at'])
+        return JsonResponse(_ticket_json(ticket))
+    except DatabaseError:
+        return _error(503, 'database_unavailable', 'The database is unavailable right now. Try again shortly.')
 
 
 @require_POST
@@ -489,7 +553,11 @@ def health(request):
     counts = {}
     if db['status'] == 'ok':
         try:
-            counts = {'faqs': FAQ.objects.filter(is_published=True).count(), 'tickets': Ticket.objects.count()}
+            counts = {
+                'faqs': FAQ.objects.filter(is_published=True).count(),
+                'error_codes': ErrorCode.objects.count(),
+                'tickets': Ticket.objects.count(),
+            }
         except DatabaseError:
             db = {**db, 'status': 'down', 'detail': 'tables missing; run migrate'}
     mongo_status, mongo_detail = mongo.ping()

@@ -362,6 +362,114 @@ class WeatherApiTests(TestCase):
         self.assertIn(f'latitude={settings.WEATHER_DEFAULT_LAT}', op.call_args[0][0])
 
 
+class ErrorCodesInSqlTests(TestCase):
+    def test_at_least_eight_error_codes_are_stored_in_sql(self):
+        from .models import ErrorCode
+
+        stored = set(ErrorCode.objects.values_list('code', flat=True))
+        self.assertGreaterEqual(len(stored), 8)
+        self.assertTrue(set(REQUIRED_CODES) <= stored)
+        self.assertTrue(ErrorCode.objects.filter(is_site_specific=True, code__startswith='FC-').exists())
+
+    def test_the_status_page_shows_what_is_in_the_database(self):
+        from .models import ErrorCode
+
+        ErrorCode.objects.filter(code='404').update(headline='Edited in SQL headline', cause='Edited cause from SQL')
+        self.assertContains(self.client.get('/status/404/'), 'Edited in SQL headline', status_code=404)
+        self.assertContains(self.client.get('/status/'), 'Edited cause from SQL')
+
+    def test_the_assistant_explains_a_code_from_the_database_row(self):
+        from .models import ErrorCode
+
+        ErrorCode.objects.filter(code='429').update(fix='Custom fix text from the database.')
+        with mock.patch.object(mongo, 'insert', return_value=True):
+            r = self.client.post('/api/assistant/', data=json.dumps({'messages': [{'role': 'user', 'text': 'error 429?'}]}), content_type='application/json')
+        self.assertIn('Custom fix text from the database.', r.json()['reply'])
+
+    def test_error_pages_still_render_when_the_database_fails(self):
+        from django.db import OperationalError
+
+        with mock.patch('arjun_app.models.ErrorCode.objects') as objects:
+            objects.filter.side_effect = OperationalError('db down')
+            objects.all.side_effect = OperationalError('db down')
+            r = self.client.get('/status/503/')
+        self.assertEqual(r.status_code, 503)
+        self.assertContains(r, 'Service unavailable', status_code=503)  # from the built-in fallback table
+
+
+class FaqApiTests(TestCase):
+    def test_api_returns_the_faqs_from_sql(self):
+        r = self.client.get('/api/faqs/')
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertGreaterEqual(data['count'], 10)
+        self.assertEqual(data['count'], len(data['faqs']))
+        self.assertEqual(set(data['faqs'][0]), {'id', 'question', 'answer', 'category', 'keywords'})
+
+    def test_api_filters_by_category_and_hides_unpublished(self):
+        FAQ.objects.create(question='Hidden?', answer='x', category='Support', is_published=False)
+        data = self.client.get('/api/faqs/?category=support').json()
+        self.assertTrue(data['faqs'] and all(f['category'] == 'Support' for f in data['faqs']))
+        self.assertNotIn('Hidden?', [f['question'] for f in data['faqs']])
+
+    def test_the_faq_page_loads_its_questions_from_the_api(self):
+        self.assertContains(self.client.get('/faq/'), "fetch('/api/faqs/')")
+
+
+class TicketCrudTests(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.t = Ticket.objects.create(name='Ana', email='ana@example.com', subject='Old subject', message='An original message here.')
+        self.url = f'/api/tickets/{self.t.reference}/'
+        self.auth = {'HTTP_X_TICKET_EMAIL': 'ana@example.com'}
+
+    def patch(self, body, **extra):
+        return self.client.patch(self.url, data=json.dumps(body), content_type='application/json', **(extra or self.auth))
+
+    def test_read_returns_the_message(self):
+        r = self.client.get(self.url, **self.auth)
+        self.assertEqual((r.status_code, r.json()['message']), (200, 'An original message here.'))
+
+    def test_update_changes_subject_message_and_status(self):
+        r = self.patch({'subject': 'New subject', 'message': 'A brand new message text.', 'status': 'resolved'})
+        self.assertEqual(r.status_code, 200)
+        self.t.refresh_from_db()
+        self.assertEqual((self.t.subject, self.t.message, self.t.status), ('New subject', 'A brand new message text.', 'resolved'))
+
+    def test_update_validates_input(self):
+        for body in [{}, {'subject': ''}, {'message': 'short'}, {'status': 'pending'}, {'unknown': 1}]:
+            self.assertEqual(self.patch(body).status_code, 400, body)
+        self.t.refresh_from_db()
+        self.assertEqual(self.t.subject, 'Old subject')
+
+    def test_update_and_delete_need_the_right_email(self):
+        self.assertEqual(self.client.patch(self.url, data='{"subject":"x"}', content_type='application/json').status_code, 401)
+        self.assertEqual(self.patch({'subject': 'x'}, HTTP_X_TICKET_EMAIL='other@example.com').status_code, 403)
+        self.assertEqual(self.client.delete(self.url).status_code, 401)
+        self.assertEqual(self.client.delete(self.url, HTTP_X_TICKET_EMAIL='other@example.com').status_code, 403)
+        self.assertTrue(Ticket.objects.filter(pk=self.t.pk).exists())
+
+    def test_delete_removes_the_ticket(self):
+        r = self.client.delete(self.url, **self.auth)
+        self.assertEqual((r.status_code, r.json()['status']), (200, 'deleted'))
+        self.assertFalse(Ticket.objects.filter(pk=self.t.pk).exists())
+        self.assertEqual(self.client.get(self.url, **self.auth).status_code, 404)
+
+    def test_create_read_update_delete_through_the_support_flow(self):
+        self.client.post('/support/', {'name': 'Bo', 'email': 'bo@example.com', 'subject': 'Flow', 'message': 'Testing the whole flow now.'})
+        ref = Ticket.objects.get(email='bo@example.com').reference
+        hdr = {'HTTP_X_TICKET_EMAIL': 'bo@example.com'}
+        self.assertEqual(self.client.get(f'/api/tickets/{ref}/', **hdr).status_code, 200)
+        self.assertEqual(self.client.patch(f'/api/tickets/{ref}/', data='{"subject":"Flow 2"}', content_type='application/json', **hdr).status_code, 200)
+        self.assertEqual(self.client.delete(f'/api/tickets/{ref}/', **hdr).status_code, 200)
+        self.assertEqual(self.client.get(f'/api/tickets/{ref}/', **hdr).status_code, 404)
+
+    def test_csrf_is_enforced_for_update_and_delete(self):
+        c = Client(enforce_csrf_checks=True)
+        self.assertEqual(c.delete(self.url, **self.auth).status_code, 403)
+        self.assertEqual(c.patch(self.url, data='{"subject":"x"}', content_type='application/json', **self.auth).status_code, 403)
+
+
 class ConfigurationTests(TestCase):
     def test_no_secret_or_key_is_hard_coded_in_the_repository(self):
         root = Path(settings.BASE_DIR).parent

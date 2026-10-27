@@ -34,7 +34,7 @@
 <div class="wrap">
   <div class="lead">
     <div>
-      <p class="kicker">{{ count }} questions, answered</p>
+      <p class="kicker"><span id="faq-count">{{ count }}</span> questions, answered</p>
       <h1 class="title">FAQ</h1>
     </div>
     <p class="lede">Quick answers about the studio, exporting and support. Can't find yours? Ask the assistant, or open a ticket.</p>
@@ -46,6 +46,9 @@
   </label>
   <p class="empty" id="faq-empty" hidden>No question matches that. Try different words, or ask the assistant.</p>
 
+  <!-- Rendered on the server so it also works without JavaScript; the script below then
+       reloads the list from the /api/faqs/ API, which is the source of truth for this page. -->
+  <div id="faq-list" aria-live="polite">
   {% for category, items in groups.items %}
   <section class="group" aria-labelledby="cat-{{ forloop.counter }}">
     <h2 id="cat-{{ forloop.counter }}">{{ category }}</h2>
@@ -59,6 +62,7 @@
   {% empty %}
   <p class="empty">No FAQs are published yet.</p>
   {% endfor %}
+  </div>
 
   <section class="more">
     <h2>Still stuck?</h2>
@@ -74,6 +78,34 @@
 {% block scripts %}
 <script>
   var box = document.getElementById('faq-search'), empty = document.getElementById('faq-empty');
+
+  // Load the questions from the API and rebuild the list. On any failure the
+  // server-rendered list that is already on the page stays.
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text) n.textContent = text; return n; }
+  fetch('/api/faqs/')
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (data) {
+      var list = document.getElementById('faq-list'), groups = {}, order = [];
+      data.faqs.forEach(function (f) { if (!groups[f.category]) { groups[f.category] = []; order.push(f.category); } groups[f.category].push(f); });
+      var frag = document.createDocumentFragment();
+      order.forEach(function (cat, i) {
+        var sec = el('section', 'group'); sec.setAttribute('aria-labelledby', 'cat-' + (i + 1));
+        var h = el('h2', '', cat); h.id = 'cat-' + (i + 1); sec.appendChild(h);
+        groups[cat].forEach(function (f) {
+          var d = el('details'); d.dataset.text = (f.question + ' ' + f.answer + ' ' + f.keywords).toLowerCase();
+          var s = el('summary', '', f.question); s.appendChild(el('span', 'ms', 'expand_more')); s.lastChild.setAttribute('aria-hidden', 'true');
+          d.appendChild(s); d.appendChild(el('p', 'answer', f.answer)); sec.appendChild(d);
+        });
+        frag.appendChild(sec);
+      });
+      if (!order.length) frag.appendChild(el('p', 'empty', 'No FAQs are published yet.'));
+      list.replaceChildren(frag);
+      document.getElementById('faq-count').textContent = data.count;
+      list.dataset.source = 'api';
+      box.dispatchEvent(new Event('input'));
+    })
+    .catch(function () { /* keep the server-rendered list */ });
+
   box.addEventListener('input', function () {
     var q = box.value.trim().toLowerCase().split(/\s+/).filter(Boolean), shown = 0;
     document.querySelectorAll('details').forEach(function (d) {
