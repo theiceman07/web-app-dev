@@ -24,6 +24,10 @@ urlpatterns = [
     path('errors/', views.status_index, name='errors'),
     path('status/<str:code>/', views.status_page, name='status'),
     path('health/', views.health, name='health'),
+    path('offline/', views.offline, name='offline'),
+    path('sw.js', views.service_worker, name='service-worker'),
+    # Removed on purpose: answers 410 Gone.
+    path('beta/', views.gone, name='gone'),
     # JSON APIs
     path('api/assistant/', views.assistant, name='assistant'),
     path('api/feedback/', views.feedback, name='feedback'),

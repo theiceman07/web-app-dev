@@ -105,6 +105,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'arjun_app.middleware.RequestLogMiddleware',
+    'arjun_app.middleware.ErrorPageMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -176,6 +177,13 @@ LOGGING = {
 
 # A failed CSRF check shows the site's own 403 page.
 CSRF_FAILURE_VIEW = 'arjun_app.views.csrf_failure'
+
+# Requests with a bigger body get the site's 413 page (arjun_app.middleware.ErrorPageMiddleware).
+DATA_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+
+# ?simulate=<code> on any URL answers with that error code, so every code can be
+# demonstrated on the live site. Set ERROR_SIMULATION=0 to turn it off.
+ERROR_SIMULATION = os.environ.get('ERROR_SIMULATION', '1') != '0'
 
 
 # Password validation

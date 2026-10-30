@@ -493,3 +493,79 @@ class ConfigurationTests(TestCase):
             cfg = s._database()
         self.assertEqual((cfg['ENGINE'], cfg['NAME'], cfg['USER'], cfg['PASSWORD'], cfg['HOST'], cfg['PORT']),
                          ('django.db.backends.postgresql', 'app', 'u@x', 'p:w', 'db.example.com', 6543))
+
+
+class ErrorSimulationTests(TestCase):
+    def test_every_code_can_be_simulated_on_a_page_with_its_real_status(self):
+        for code, e in ERROR_CODES.items():
+            r = self.client.get(f'/?simulate={code}')
+            self.assertEqual(r.status_code, e['http'], code)
+            self.assertEqual(r['X-Simulated-Error'], code)
+            self.assertContains(r, code, status_code=e['http'])
+
+    def test_simulating_on_an_api_returns_json(self):
+        r = self.client.get('/api/faqs/?simulate=502')
+        self.assertEqual(r.status_code, 502)
+        self.assertEqual(r.json()['error']['code'], 502)
+        r = self.client.get('/api/faqs/?simulate=offline')
+        self.assertEqual(r.status_code, 503)
+        self.assertEqual(r.json()['error']['site_code'], 'FC-000')
+
+    def test_simulate_offline_shows_the_offline_page(self):
+        r = self.client.get('/faq/?simulate=offline')
+        self.assertEqual(r.status_code, 503)
+        self.assertContains(r, 'FC-000', status_code=503)
+        self.assertContains(r, 'You are offline.', status_code=503)
+
+    def test_unknown_simulated_code_is_404(self):
+        self.assertEqual(self.client.get('/?simulate=999').status_code, 404)
+
+    @override_settings(ERROR_SIMULATION=False)
+    def test_simulation_can_be_turned_off(self):
+        self.assertEqual(self.client.get('/faq/?simulate=502').status_code, 200)
+
+
+class RealErrorTests(TestCase):
+    def test_removed_page_is_410(self):
+        r = self.client.get('/beta/')
+        self.assertEqual(r.status_code, 410)
+        self.assertContains(r, 'Gone', status_code=410)
+
+    def test_wrong_method_gets_the_styled_405_with_allow_header(self):
+        r = self.client.get('/api/assistant/')
+        self.assertEqual(r.status_code, 405)
+        self.assertEqual(r.json()['error']['code'], 405)
+        self.assertEqual(r['Allow'], 'POST')
+        r = self.client.post('/health/')
+        self.assertEqual(r.status_code, 405)
+        self.assertContains(r, 'Method not allowed', status_code=405)
+
+    def test_oversized_body_is_413(self):
+        body = 'x' * (settings.DATA_UPLOAD_MAX_MEMORY_SIZE + 1)
+        r = self.client.post('/api/assistant/', data=body, content_type='application/json')
+        self.assertEqual(r.status_code, 413)
+        self.assertEqual(r.json()['error']['code'], 413)
+
+
+class OfflineTests(TestCase):
+    def test_offline_code_is_stored_in_sql(self):
+        from .models import ErrorCode
+        row = ErrorCode.objects.get(code='FC-000')
+        self.assertTrue(row.is_site_specific)
+        self.assertEqual(row.http_status, 503)
+
+    def test_offline_page_is_self_contained(self):
+        r = self.client.get('/offline/')
+        self.assertEqual(r.status_code, 503)
+        self.assertNotIn('https://', r.content.decode())
+
+    def test_service_worker_is_served_from_the_root(self):
+        r = self.client.get('/sw.js')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r['Content-Type'], 'application/javascript')
+        self.assertEqual(r['Service-Worker-Allowed'], '/')
+        self.assertContains(r, "'/offline/'")
+
+    def test_every_page_registers_the_service_worker(self):
+        for path in ['/', '/faq/', '/support/', '/status/', '/health/', '/status/404/']:
+            self.assertIn("register('/sw.js')", self.client.get(path).content.decode(), path)

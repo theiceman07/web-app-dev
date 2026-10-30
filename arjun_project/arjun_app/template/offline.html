@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="robots" content="noindex" />
+    <title>{{ code }} {{ e.title }} — FoleyCraft</title>
+    {# Self-contained on purpose: this page is shown with no network, so nothing here may load from elsewhere. #}
+    <style>
+      :root { --tone: #ff8a3d; --grey: #a2a2a2; --text2: #cfcfcf; --rule: rgba(255, 255, 255, 0.28); --gutter: clamp(16px, 3.2vw, 44px); }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: #000; color: #fff; }
+      body { min-height: 100vh; display: flex; flex-direction: column; font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: 18px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+      h1, h2, p { margin: 0; }
+      header { height: 64px; padding: 0 var(--gutter); display: flex; align-items: center; gap: 10px; font-family: 'Anton', Impact, sans-serif; font-size: 26px; }
+      main { flex: 1; padding: 0 var(--gutter) clamp(48px, 7vw, 96px); }
+      .wrap { border-top: 1px solid var(--rule); padding-top: clamp(24px, 4vw, 56px); display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(24px, 5vw, 80px); align-items: end; }
+      .code { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(6rem, 22vw, 22rem); line-height: 0.85; color: var(--tone); }
+      .kicker { font-size: 15px; color: var(--grey); margin-bottom: 8px; }
+      h1 { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(2.5rem, 6vw, 5.5rem); line-height: 0.98; }
+      .message { margin-top: 18px; font-size: clamp(18px, 1.6vw, 22px); line-height: 1.35; color: var(--text2); max-width: 26em; }
+      .help { margin-top: 20px; font-size: 16px; color: var(--grey); max-width: 30em; }
+      .help strong { color: #fff; }
+      .actions { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; margin-top: 28px; }
+      .btn { display: inline-flex; align-items: center; min-height: 56px; padding: 0 30px; border-radius: 999px; background: #fff; color: #000; border: 0; font: 700 18px 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; }
+      .btn:hover { background: #19f3ff; }
+      .btn:focus-visible { outline: 3px solid #19f3ff; outline-offset: 3px; }
+      .meta { margin-top: 24px; font-size: 15px; color: var(--grey); }
+      .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--tone); margin-right: 8px; animation: pulse 1.6s ease-in-out infinite; }
+      @keyframes pulse { 50% { opacity: 0.25; } }
+      @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; align-items: start; } }
+      @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="9" cy="9" r="8" fill="#ff3254" /><path d="M2 27a12 12 0 0 1 24 0Z" fill="#19f3ff" /></svg>
+      foleycraft
+    </header>
+    <main>
+      <div class="wrap">
+        <h2 class="code" aria-label="Error {{ code }}">{{ code }}</h2>
+        <div>
+          <p class="kicker">{{ code }} · {{ e.title }}</p>
+          <h1>{{ e.headline }}</h1>
+          <p class="message">{{ e.message }}</p>
+          <p class="help"><strong>Why it happens:</strong> {{ e.cause }}<br /><strong>What to do:</strong> {{ e.fix }}</p>
+          <div class="actions">
+            <button class="btn" type="button" onclick="location.reload()">Try again</button>
+          </div>
+          <p class="meta" role="status"><span class="dot" aria-hidden="true"></span><span id="state">Waiting for a connection…</span></p>
+        </div>
+      </div>
+    </main>
+    <script>
+      // Reload as soon as the connection comes back (unless this is a simulated error page).
+      if (!/[?&]simulate=/.test(location.search)) {
+        addEventListener('online', function () { document.getElementById('state').textContent = 'Back online. Reloading…'; location.reload(); });
+      }
+    </script>
+  </body>
+</html>

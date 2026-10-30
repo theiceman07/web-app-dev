@@ -71,6 +71,27 @@ def not_found(request, *args, **kwargs):
     return render_status(request, '404')
 
 
+def gone(request, *args, **kwargs):
+    # Old addresses that were removed on purpose answer 410, not 404.
+    return render_status(request, '410')
+
+
+def offline(request):
+    """The no-connection page (FC-000). The service worker caches it on the first visit and
+    shows it whenever a page cannot load because the device is offline."""
+    e = get_error('FC-000')
+    return render(request, 'offline.html', {'code': 'FC-000', 'e': e}, status=e['http'])
+
+
+def service_worker(request):
+    """sw.js must be served from the site root so it can control every page."""
+    response = render(request, 'sw.js', {'version': os.environ.get('VERCEL_GIT_COMMIT_SHA', 'dev')[:7]},
+                      content_type='application/javascript')
+    response['Cache-Control'] = 'no-cache'
+    response['Service-Worker-Allowed'] = '/'
+    return response
+
+
 def csrf_failure(request, reason=''):
     return render_status(request, '403')
 

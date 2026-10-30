@@ -21,6 +21,11 @@
   .tile span { font-size: 16px; font-weight: 700; }
   .tile small { display: block; font-size: 14px; font-weight: 500; margin-top: 4px; }
   .legend { font-size: 15px; color: var(--grey); margin-top: 24px; max-width: 46em; }
+  .legend code, .live code { color: #fff; }
+  h2.sub { font-family: 'Anton', Impact, sans-serif; font-weight: 400; font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1; margin-top: clamp(40px, 6vw, 72px); }
+  .live { margin: 16px 0 0; padding-left: 1.2em; max-width: 52em; color: var(--text2); font-size: 16px; }
+  .live li { margin-top: 8px; }
+  .live a { overflow-wrap: anywhere; }
   @media (max-width: 900px) { .page { grid-template-columns: 1fr; align-items: start; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>
 {% endblock %}
@@ -41,6 +46,16 @@
     {% endfor %}
   </div>
   <p class="legend">Pink: client errors (4xx). Orange: server errors, rate limits and the site code. Cyan: information.</p>
+  <h2 class="sub">Try them live</h2>
+  <p class="legend">Add <code>?simulate=CODE</code> to any address and the site answers with that code for real: an error page for pages, a JSON error for <code>/api/</code> addresses. Some codes also happen on their own:</p>
+  <ul class="live">
+    <li><a href="/?simulate=502">/?simulate=502</a> and <a href="/api/faqs/?simulate=504">/api/faqs/?simulate=504</a>: any code, on any page or API.</li>
+    <li><strong>FC-000 offline:</strong> open the site once, turn off Wi-Fi, then reload. The service worker shows the offline page (or try <a href="/?simulate=offline">/?simulate=offline</a>).</li>
+    <li><strong>404:</strong> <a href="/no-such-page/">/no-such-page/</a>. <strong>410:</strong> <a href="/beta/">/beta/</a>, a page removed for good.</li>
+    <li><strong>405:</strong> <a href="/api/assistant/">/api/assistant/</a> only accepts POST. <strong>413:</strong> any request body over 1 MB.</li>
+    <li><strong>401 / 403 / 404:</strong> ticket lookups at <code>/api/tickets/&lt;ref&gt;/</code>. <strong>429:</strong> more than 20 assistant messages a minute.</li>
+    <li><strong>503:</strong> <a href="/health/">health</a> when the database is down. <strong>FC-100:</strong> the assistant when the AI is slow or down.</li>
+  </ul>
   <div class="actions"><button class="btn" type="button" data-ask="What do the error codes mean?"><span class="ms" aria-hidden="true">chat_bubble</span>Ask the assistant</button></div>
 {% else %}
   <div class="page">

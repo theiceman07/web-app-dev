@@ -1,0 +1,14 @@
+{# Registers the service worker (offline page FC-000) and shows a bar when the connection drops on an open page. #}
+<div id="fc-offline" role="alert" hidden style="position:fixed;left:0;right:0;bottom:0;z-index:2147483000;padding:14px 16px;background:#ff8a3d;color:#000;font:700 16px/1.3 'Hanken Grotesk',system-ui,sans-serif;text-align:center">
+  FC-000 · You are offline. Check your internet connection; anything you send now will fail.
+</div>
+<script>
+  (function () {
+    if ('serviceWorker' in navigator) {
+      addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+    }
+    var bar = document.getElementById('fc-offline');
+    function update() { bar.hidden = navigator.onLine; }
+    addEventListener('online', update); addEventListener('offline', update); update();
+  })();
+</script>

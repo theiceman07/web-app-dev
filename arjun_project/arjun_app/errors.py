@@ -91,6 +91,14 @@ ERROR_CODES = {
         cause='An outside service did not answer within its time limit.',
         fix='Try again in a moment.',
     ),
+    # Site-specific codes. FC-000 is shown by the service worker (sw.js) when the browser
+    # has no connection; FC-100 is raised by the assistant. Neither comes from the web server.
+    'FC-000': dict(
+        http=503, title='No connection', tone='warn', headline='You are offline.',
+        message='Your device could not reach FoleyCraft. Check your internet connection. The page reloads by itself when you are back online.',
+        cause='The device has no internet connection, or the network dropped while the page was loading.',
+        fix='Turn Wi-Fi or mobile data back on, then press Try again.',
+    ),
     # Site-specific code: raised by the assistant, never by the web server.
     'FC-100': dict(
         http=503, title='Assistant degraded', tone='warn', headline='The AI took too long.',
